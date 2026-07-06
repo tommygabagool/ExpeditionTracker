@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "PowerShell(npx --yes create-expo-app@latest . --template default)"
+    ]
+  }
+}

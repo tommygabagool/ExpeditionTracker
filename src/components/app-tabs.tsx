@@ -1,32 +1,30 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 
-export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+const c = Colors.dark;
 
+const TABS = [
+  { name: 'index', label: 'Today', sf: 'flag.fill' },
+  { name: 'week', label: 'Week', sf: 'calendar' },
+  { name: 'fuel', label: 'Fuel', sf: 'fork.knife' },
+  { name: 'weight', label: 'Weight', sf: 'scalemass.fill' },
+  { name: 'trails', label: 'Trails', sf: 'map.fill' },
+  { name: 'summit', label: 'Summit', sf: 'medal.fill' },
+] as const;
+
+export default function AppTabs() {
   return (
     <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
+      backgroundColor={c.background}
+      indicatorColor={c.backgroundSelected}
+      labelStyle={{ selected: { color: c.gold } }}>
+      {TABS.map((tab) => (
+        <NativeTabs.Trigger key={tab.name} name={tab.name}>
+          <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Icon sf={tab.sf} />
+        </NativeTabs.Trigger>
+      ))}
     </NativeTabs>
   );
 }

@@ -1,18 +1,22 @@
 {
   "expo": {
-    "name": "ExpeditionTracker",
-    "slug": "ExpeditionTracker",
+    "name": "Expedition Conditioning",
+    "slug": "expedition-conditioning",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "expeditiontracker",
-    "userInterfaceStyle": "automatic",
+    "scheme": "expedition",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#10161C",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.tommi.expeditionconditioning",
+      "supportsTablet": false
     },
     "android": {
+      "package": "com.tommi.expeditionconditioning",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#10161C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -28,11 +32,13 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#10161C",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "expo-sqlite",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
