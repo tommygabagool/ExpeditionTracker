@@ -1,21 +1,12 @@
+import { AlfaSlabOne_400Regular } from '@expo-google-fonts/alfa-slab-one';
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-} from '@expo-google-fonts/inter';
-import {
-  JetBrainsMono_400Regular,
-  JetBrainsMono_500Medium,
-  JetBrainsMono_700Bold,
-} from '@expo-google-fonts/jetbrains-mono';
-import {
-  Oswald_400Regular,
-  Oswald_500Medium,
-  Oswald_600SemiBold,
-  Oswald_700Bold,
+  SourceSans3_400Regular,
+  SourceSans3_600SemiBold,
+  SourceSans3_700Bold,
   useFonts,
-} from '@expo-google-fonts/oswald';
-import { DarkTheme, ThemeProvider } from 'expo-router';
+} from '@expo-google-fonts/source-sans-3';
+import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/space-mono';
+import { DefaultTheme, ThemeProvider } from 'expo-router';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -29,9 +20,9 @@ import { startSyncEngine } from '@/sync/engine';
 SplashScreen.preventAutoHideAsync();
 
 const navTheme = {
-  ...DarkTheme,
+  ...DefaultTheme,
   colors: {
-    ...DarkTheme.colors,
+    ...DefaultTheme.colors,
     primary: palette.orange,
     background: palette.bg,
     card: palette.bg,
@@ -42,16 +33,12 @@ const navTheme = {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Oswald_400Regular,
-    Oswald_500Medium,
-    Oswald_600SemiBold,
-    Oswald_700Bold,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    JetBrainsMono_400Regular,
-    JetBrainsMono_500Medium,
-    JetBrainsMono_700Bold,
+    AlfaSlabOne_400Regular,
+    SourceSans3_400Regular,
+    SourceSans3_600SemiBold,
+    SourceSans3_700Bold,
+    SpaceMono_400Regular,
+    SpaceMono_700Bold,
   });
 
   useEffect(() => {
@@ -72,7 +59,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={navTheme}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Stack
         screenOptions={{
           headerShown: false,

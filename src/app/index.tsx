@@ -7,6 +7,7 @@ import { FuelTab } from '@/components/fuel-tab';
 import { Header } from '@/components/header';
 import { Login } from '@/components/login';
 import { Onboarding } from '@/components/onboarding';
+import { SnowBurst } from '@/components/snow-burst';
 import { SummitTab } from '@/components/summit-tab';
 import { TabBar, type MainTab } from '@/components/tab-bar';
 import { TodayTab } from '@/components/today-tab';
@@ -16,6 +17,7 @@ import { palette } from '@/constants/theme';
 import { awardBadge } from '@/data/repos';
 import { useAppData } from '@/data/store';
 import { useSession } from '@/hooks/use-session';
+import { computeAscent } from '@/program/ascent';
 import { CAMP_DEFS, computeBadges } from '@/program/badges';
 import { GOAL_WEIGHT_LB, START_WEIGHT_LB } from '@/program/goals';
 import { currentWeek, keyOf, todayDate } from '@/program/schedule';
@@ -26,6 +28,7 @@ export default function AppScreen() {
   const insets = useSafeAreaInsets();
   const data = useAppData();
   const badges = useMemo(() => computeBadges(data), [data]);
+  const ascent = useMemo(() => computeAscent(data), [data]);
 
   const session = useSession();
   const [screen, setScreen] = useState<Screen>('today');
@@ -95,6 +98,7 @@ export default function AppScreen() {
         <View style={{ height: insets.top }} />
         <Header
           badgeCountLine={`${totalEarned}/${badges.length}`}
+          metaLine={`${ascent.rank.title} · ${ascent.altitudeFt.toLocaleString('en-US')} FT · WK ${String(currentWeek()).padStart(2, '0')}/26`}
           startW={START_WEIGHT_LB.toFixed(0)}
           currentW={cur.toFixed(1)}
           goalW={GOAL_WEIGHT_LB.toFixed(0)}
@@ -104,24 +108,29 @@ export default function AppScreen() {
           onOpenCalibration={() => setRecalibrating(true)}
         />
 
-        {screen === 'today' && <TodayTab data={data} badges={badges} onOpenSummit={openSummit} />}
+        {screen === 'today' && (
+          <TodayTab data={data} badges={badges} ascent={ascent} onOpenSummit={openSummit} />
+        )}
         {screen === 'week' && <WeekTab data={data} week={weekSel} onChangeWeek={setWeekSel} />}
         {screen === 'fuel' && <FuelTab data={data} />}
         {screen === 'trails' && <TrailsTab data={data} />}
         {screen === 'summit' && (
-          <SummitTab data={data} badges={badges} onBack={() => setScreen(summitBack)} />
+          <SummitTab data={data} badges={badges} ascent={ascent} onBack={() => setScreen(summitBack)} />
         )}
       </ScrollView>
 
       <TabBar active={screen} onChange={setScreen} />
 
       {celebBadge && (
-        <CelebrationToast
-          title={celebBadge.title}
-          iconPaths={celebBadge.iconPaths}
-          campName={CAMP_DEFS[celebBadge.camp].name}
-          onDismiss={() => setCelebrate(null)}
-        />
+        <>
+          <SnowBurst key={celebBadge.id} />
+          <CelebrationToast
+            title={celebBadge.title}
+            iconPaths={celebBadge.iconPaths}
+            campName={CAMP_DEFS[celebBadge.camp].name}
+            onDismiss={() => setCelebrate(null)}
+          />
+        </>
       )}
     </View>
   );

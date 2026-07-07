@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FontFamily, palette } from '@/constants/theme';
+import { FontFamily, goldTint, palette } from '@/constants/theme';
 import { saveProfile } from '@/data/repos';
 import type { Profile } from '@/data/store';
 import { anchorMaxes } from '@/program/estimator';
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   disclaimer: {
-    backgroundColor: 'rgba(227,179,65,0.08)',
+    backgroundColor: goldTint,
     borderLeftWidth: 3,
     borderLeftColor: palette.gold,
     padding: 12,

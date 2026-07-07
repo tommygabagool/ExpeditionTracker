@@ -7,6 +7,7 @@ import { currentWeek, phaseOf } from '@/program/schedule';
 
 interface Props {
   badgeCountLine: string;
+  metaLine: string; // rank · altitude · week
   startW: string;
   currentW: string;
   goalW: string;
@@ -18,6 +19,7 @@ interface Props {
 
 export function Header({
   badgeCountLine,
+  metaLine,
   startW,
   currentW,
   goalW,
@@ -27,7 +29,6 @@ export function Header({
   onOpenCalibration,
 }: Props) {
   const week = currentWeek();
-  const phase = phaseOf(week);
   const pts = ridge();
   const s1 = segPaths(pts, 0, 9);
   const s2 = segPaths(pts, 9, 18);
@@ -41,9 +42,7 @@ export function Header({
           <Text style={styles.title}>
             EXPEDITION <Text style={{ color: palette.orange }}>CONDITIONING</Text>
           </Text>
-          <Text style={styles.meta}>
-            26-WK EVEREST PREP · WK {String(week).padStart(2, '0')}/26 · {phase.name}
-          </Text>
+          <Text style={styles.meta}>{metaLine}</Text>
         </View>
         <Pressable onPress={onOpenCalibration} style={styles.calibrateBtn}>
           <Svg viewBox="0 0 24 24" width={20} height={20}>

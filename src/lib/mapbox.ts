@@ -7,9 +7,9 @@ const token = process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '';
 
 export const MAPBOX_READY = token.length > 0;
 
-// Dark topo style. Swap for a custom Mapbox Studio style URL to match the
-// design's hand-drawn contour aesthetic on #10161C.
-export const MAP_STYLE_URL = 'mapbox://styles/mapbox/dark-v11';
+// Outdoors style (contours + trails on parchment tones) — fits the Ranger
+// Poster language. Swap for a custom Studio style URL to push it further.
+export const MAP_STYLE_URL = 'mapbox://styles/mapbox/outdoors-v12';
 
 let configured = false;
 

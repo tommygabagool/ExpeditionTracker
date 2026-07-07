@@ -86,12 +86,12 @@ export const BADGE_DEFS: BadgeDef[] = [
 ];
 
 export const CAMP_DEFS = [
-  { name: 'TRAILHEAD', alt: '0' },
-  { name: 'CAMP 1', alt: '17,600' },
-  { name: 'CAMP 2', alt: '19,900' },
-  { name: 'CAMP 3', alt: '21,300' },
-  { name: 'HIGH CAMP', alt: '26,000' },
-  { name: 'SUMMIT', alt: '29,032' },
+  { name: 'TRAILHEAD', alt: '0', altFt: 0 },
+  { name: 'CAMP 1', alt: '17,600', altFt: 17600 },
+  { name: 'CAMP 2', alt: '19,900', altFt: 19900 },
+  { name: 'CAMP 3', alt: '21,300', altFt: 21300 },
+  { name: 'HIGH CAMP', alt: '26,000', altFt: 26000 },
+  { name: 'SUMMIT', alt: '29,032', altFt: 29032 },
 ] as const;
 
 function longestRun(keys: string[]): number {

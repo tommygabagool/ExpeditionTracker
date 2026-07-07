@@ -4,7 +4,8 @@
       "PowerShell(\"cleaned\")",
       "WebSearch",
       "WebFetch(domain:fitnesscalcs.com)",
-      "WebFetch(domain:exrx.net)"
+      "WebFetch(domain:exrx.net)",
+      "PowerShell(npx expo install @expo-google-fonts/alfa-slab-one @expo-google-fonts/source-sans-3 @expo-google-fonts/space-mono)"
     ]
   }
 }

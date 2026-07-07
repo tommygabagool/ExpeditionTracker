@@ -2,6 +2,8 @@ import Svg, { Circle, G, Path } from 'react-native-svg';
 
 import { palette } from '@/constants/theme';
 
+const RING_CIRCUMFERENCE = 2 * Math.PI * 34;
+
 interface Props {
   iconPaths: string[];
   ring: string;
@@ -11,6 +13,8 @@ interface Props {
   innerStroke?: string;
   innerOpacity?: number;
   star?: boolean;
+  /** 0..1 — draws a partial progress arc over the outer ring (locked badges). */
+  progress?: number;
 }
 
 export function BadgeMedal({
@@ -22,10 +26,25 @@ export function BadgeMedal({
   innerStroke,
   innerOpacity = 0.4,
   star = false,
+  progress,
 }: Props) {
+  const showArc = progress !== undefined && progress > 0 && progress < 1;
   return (
     <Svg viewBox="0 0 72 72" width={size} height={size}>
       <Circle cx={36} cy={36} r={34} fill={bg} stroke={ring} strokeWidth={2} />
+      {showArc && (
+        <Circle
+          cx={36}
+          cy={36}
+          r={34}
+          fill="none"
+          stroke={palette.orange}
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeDasharray={`${RING_CIRCUMFERENCE * progress} ${RING_CIRCUMFERENCE}`}
+          transform="rotate(-90 36 36)"
+        />
+      )}
       <Circle
         cx={36}
         cy={36}

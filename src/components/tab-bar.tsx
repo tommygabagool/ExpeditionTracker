@@ -21,7 +21,9 @@ export function TabBar({ active, onChange }: { active: string; onChange: (t: Mai
         return (
           <Pressable key={t.key} onPress={() => onChange(t.key)} style={styles.item}>
             <View style={[styles.indicator, { backgroundColor: on ? palette.orange : 'transparent' }]} />
-            <Text style={[styles.label, { color: on ? palette.text : palette.faint }]}>{t.label}</Text>
+            <Text style={[styles.label, { color: on ? palette.barText : palette.barTextDim }]}>
+              {t.label}
+            </Text>
           </Pressable>
         );
       })}

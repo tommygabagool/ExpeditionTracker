@@ -1,9 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Altimeter } from '@/components/altimeter';
 import { ExerciseLogger } from '@/components/exercise-logger';
-import { FontFamily, palette } from '@/constants/theme';
+import { FontFamily, goldTint, palette } from '@/constants/theme';
 import { completeWorkout, uncompleteWorkout } from '@/data/repos';
 import type { AppData } from '@/data/store';
+import type { Ascent } from '@/program/ascent';
 import { CAMP_DEFS, type BadgeComputed } from '@/program/badges';
 import { suggestForExercise } from '@/program/estimator';
 import { getWorkout } from '@/program/program';
@@ -22,10 +24,11 @@ import { BadgeMedal } from './badge-medal';
 interface Props {
   data: AppData;
   badges: BadgeComputed[];
+  ascent: Ascent;
   onOpenSummit: () => void;
 }
 
-export function TodayTab({ data, badges, onOpenSummit }: Props) {
+export function TodayTab({ data, badges, ascent, onOpenSummit }: Props) {
   const today = todayDate();
   const todayKey = keyOf(today);
   const dow = today.getDay();
@@ -44,7 +47,9 @@ export function TodayTab({ data, badges, onOpenSummit }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.card, { borderTopColor: phase.color, borderTopWidth: 3 }]}>
+      <Altimeter ascent={ascent} />
+
+      <View style={[styles.card, { borderTopColor: phase.color, borderTopWidth: 3, marginTop: 14 }]}>
         <View style={styles.cardHead}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.dateLine}>
@@ -184,7 +189,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.body,
     fontSize: 12,
     color: palette.gold,
-    backgroundColor: 'rgba(227,179,65,0.08)',
+    backgroundColor: goldTint,
     paddingVertical: 8,
     paddingHorizontal: 10,
   },

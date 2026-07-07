@@ -6,8 +6,8 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "expedition",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#10161C",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F2ECDC",
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.tommi.expeditionconditioning",
@@ -19,7 +19,7 @@
     "android": {
       "package": "com.tommi.expeditionconditioning",
       "adaptiveIcon": {
-        "backgroundColor": "#10161C",
+        "backgroundColor": "#F2ECDC",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -35,7 +35,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#10161C",
+          "backgroundColor": "#F2ECDC",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
