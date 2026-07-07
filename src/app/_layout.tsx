@@ -22,6 +22,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { palette } from '@/constants/theme';
+import { initMapbox } from '@/lib/mapbox';
 import { startSyncEngine } from '@/sync/engine';
 
 SplashScreen.preventAutoHideAsync();
@@ -58,7 +59,10 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  useEffect(() => startSyncEngine(), []);
+  useEffect(() => {
+    initMapbox();
+    return startSyncEngine();
+  }, []);
 
   if (!fontsLoaded) {
     return null;

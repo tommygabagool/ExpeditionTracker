@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Line, Path, Text as SvgText } from 'react-native-svg';
 
+import { TrailMap } from '@/components/trail-map';
 import { FontFamily, palette } from '@/constants/theme';
 import { logHike } from '@/data/repos';
 import type { AppData } from '@/data/store';
@@ -127,8 +128,6 @@ export function TrailsTab({ data }: { data: AppData }) {
 
   if (sel) {
     const dc = diffColor(sel.diff);
-    const contours = topo(sel.seed, 358, 210, 8);
-    const route = trailRoute(sel.seed, 358, 210);
     const prof = trailProfile(sel.seed, 358, 130);
     return (
       <View style={styles.container}>
@@ -137,20 +136,7 @@ export function TrailsTab({ data }: { data: AppData }) {
         </Pressable>
 
         <View style={styles.detailPanel}>
-          <Svg viewBox="0 0 358 210" style={{ width: '100%', aspectRatio: 358 / 210, backgroundColor: palette.bg }}>
-            {contours.map((c, i) => (
-              <Path key={i} d={c.d} fill="none" stroke={palette.border} strokeWidth={1} />
-            ))}
-            <Path d={route.d} fill="none" stroke={palette.orange} strokeWidth={2} strokeDasharray="6 3" strokeLinejoin="round" />
-            <Circle cx={route.sx} cy={route.sy} r={4} fill={palette.gold} stroke={palette.bg} strokeWidth={1.5} />
-            <Circle cx={route.ex} cy={route.ey} r={4} fill={palette.orange} stroke={palette.bg} strokeWidth={1.5} />
-            <SvgText x={route.sx + 9} y={route.sy + 4} fill={palette.gold} fontFamily={FontFamily.mono} fontSize={8} letterSpacing={1}>
-              TRAILHEAD
-            </SvgText>
-            <SvgText x={route.ex + 9} y={route.ey - 6} fill={palette.orange} fontFamily={FontFamily.mono} fontSize={8} letterSpacing={1}>
-              SUMMIT
-            </SvgText>
-          </Svg>
+          <TrailMap trail={sel} />
           <View style={{ padding: 16 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
               <Text style={styles.detailName}>{sel.name.toUpperCase()}</Text>

@@ -15,6 +15,9 @@ export interface Trail {
   drive: number; // minutes from home
   diff: Difficulty;
   seed: number;
+  /** Trailhead parking [longitude, latitude] — Mapbox order. Approximate;
+   *  refine against the CT DEEP Trails Set (geodata.ct.gov) when we add routes. */
+  center: [number, number];
   trailhead: string;
   notes: string;
 }
@@ -29,6 +32,7 @@ export const TRAILS: Trail[] = [
     drive: 45,
     diff: 'Easy',
     seed: 2,
+    center: [-72.7889, 41.8267],
     trailhead: 'Route 185 lot, Simsbury. Restrooms at the tower (seasonal).',
     notes:
       'Steady climb on wide gravel to the ridgeline, then flat walking to the tower. Ideal early-phase ruck footing.',
@@ -42,6 +46,7 @@ export const TRAILS: Trail[] = [
     drive: 15,
     diff: 'Moderate',
     seed: 5,
+    center: [-72.906, 41.4218],
     trailhead: 'Main lot on Mt Carmel Ave, Hamden — opposite Quinnipiac.',
     notes:
       'Carriage road with a consistent grade to the stone tower. Add the Blue Trail loop for extra vert.',
@@ -55,6 +60,7 @@ export const TRAILS: Trail[] = [
     drive: 25,
     diff: 'Moderate',
     seed: 8,
+    center: [-72.7688, 41.5487],
     trailhead: 'Giuffrida Park, Meriden. Lot fills by 9 AM on weekends.',
     notes:
       'Cliff-edge walking above Crescent Lake, two summits per lap. Rocky sections — good boot practice.',
@@ -68,6 +74,7 @@ export const TRAILS: Trail[] = [
     drive: 30,
     diff: 'Moderate',
     seed: 11,
+    center: [-72.7906, 41.6099],
     trailhead: 'West Lane lot, Berlin. No facilities.',
     notes:
       'Traprock ridgeline with repeated short climbs — the best mid-phase leg burner in central CT.',
@@ -81,6 +88,7 @@ export const TRAILS: Trail[] = [
     drive: 75,
     diff: 'Hard',
     seed: 14,
+    center: [-73.4189, 42.0303],
     trailhead: 'Undermountain Trail lot, Route 41, Salisbury.',
     notes:
       'Highest peak in CT. Sustained climb with a steep, scrambly summit block — treat it as a dress rehearsal.',
