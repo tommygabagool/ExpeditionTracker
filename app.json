@@ -52,6 +52,12 @@
         "projectId": "780144bc-7c35-4df1-9f6a-0665f41b591c"
       }
     },
-    "owner": "tommyg5121"
+    "owner": "tommyg5121",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/780144bc-7c35-4df1-9f6a-0665f41b591c"
+    }
   }
 }
