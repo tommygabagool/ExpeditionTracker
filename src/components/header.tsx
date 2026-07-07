@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 
+import { Logo } from '@/components/logo';
 import { FontFamily, palette } from '@/constants/theme';
 import { ridge, segPaths } from '@/lib/geometry';
 import { currentWeek, phaseOf } from '@/program/schedule';
@@ -38,11 +39,14 @@ export function Header({
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
-        <View style={{ minWidth: 0, flex: 1 }}>
-          <Text style={styles.title}>
-            EXPEDITION <Text style={{ color: palette.orange }}>CONDITIONING</Text>
-          </Text>
-          <Text style={styles.meta}>{metaLine}</Text>
+        <View style={styles.brandRow}>
+          <Logo size={42} />
+          <View style={{ minWidth: 0, flex: 1 }}>
+            <Text style={styles.title}>
+              SWITCH<Text style={{ color: palette.orange }}>BACK</Text>
+            </Text>
+            <Text style={styles.meta}>{metaLine}</Text>
+          </View>
         </View>
         <Pressable onPress={onOpenCalibration} style={styles.calibrateBtn}>
           <Svg viewBox="0 0 24 24" width={20} height={20}>
@@ -144,6 +148,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    gap: 10,
+  },
+  brandRow: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
   },
   title: {

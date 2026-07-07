@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Logo } from '@/components/logo';
 import { FontFamily, palette } from '@/constants/theme';
 import { signIn } from '@/lib/supabase';
 
@@ -41,7 +42,8 @@ export function Login({ onSkip }: { onSkip: () => void }) {
           gap: 14,
         }}>
         <View>
-          <Text style={styles.kicker}>EXPEDITION CONDITIONING</Text>
+          <Logo size={64} />
+          <Text style={[styles.kicker, { marginTop: 14 }]}>SWITCHBACK</Text>
           <Text style={styles.title}>SIGN IN</Text>
           <Text style={styles.subtitle}>
             One account syncs the log across devices. Everything still records on-device when

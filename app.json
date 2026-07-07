@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Expedition Conditioning",
+    "name": "Switchback",
     "slug": "expedition-conditioning",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +9,6 @@
     "userInterfaceStyle": "light",
     "backgroundColor": "#F2ECDC",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.tommi.expeditionconditioning",
       "supportsTablet": false,
       "infoPlist": {
@@ -37,7 +36,7 @@
         {
           "backgroundColor": "#F2ECDC",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 160
         }
       ],
       "expo-sqlite",

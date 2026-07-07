@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Logo } from '@/components/logo';
 import { FontFamily, goldTint, palette } from '@/constants/theme';
 import { saveProfile } from '@/data/repos';
 import type { Profile } from '@/data/store';
@@ -74,7 +75,8 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
           gap: 14,
         }}>
         <View>
-          <Text style={styles.kicker}>EXPEDITION CONDITIONING</Text>
+          <Logo size={64} />
+          <Text style={[styles.kicker, { marginTop: 14 }]}>SWITCHBACK</Text>
           <Text style={styles.title}>CALIBRATION</Text>
           <Text style={styles.subtitle}>
             Seeds a suggested working weight for every barbell and dumbbell lift in the program.
