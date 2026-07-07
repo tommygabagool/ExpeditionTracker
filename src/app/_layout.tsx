@@ -5,21 +5,23 @@ import {
 } from '@expo-google-fonts/inter';
 import {
   JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
   JetBrainsMono_700Bold,
 } from '@expo-google-fonts/jetbrains-mono';
 import {
+  Oswald_400Regular,
   Oswald_500Medium,
   Oswald_600SemiBold,
   Oswald_700Bold,
   useFonts,
 } from '@expo-google-fonts/oswald';
 import { DarkTheme, ThemeProvider } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
-import AppTabs from '@/components/app-tabs';
-import { Colors } from '@/constants/theme';
+import { palette } from '@/constants/theme';
 import { startSyncEngine } from '@/sync/engine';
 
 SplashScreen.preventAutoHideAsync();
@@ -28,16 +30,17 @@ const navTheme = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    primary: Colors.dark.accent,
-    background: Colors.dark.background,
-    card: Colors.dark.background,
-    text: Colors.dark.text,
-    border: Colors.dark.border,
+    primary: palette.orange,
+    background: palette.bg,
+    card: palette.bg,
+    text: palette.text,
+    border: palette.border,
   },
 };
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
+    Oswald_400Regular,
     Oswald_500Medium,
     Oswald_600SemiBold,
     Oswald_700Bold,
@@ -45,6 +48,7 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
     JetBrainsMono_700Bold,
   });
 
@@ -63,7 +67,12 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={navTheme}>
       <StatusBar style="light" />
-      <AppTabs />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: palette.bg },
+        }}
+      />
     </ThemeProvider>
   );
 }

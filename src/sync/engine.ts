@@ -1,6 +1,7 @@
 import NetInfo from '@react-native-community/netinfo';
 import { AppState } from 'react-native';
 
+import { notifyDataChanged } from '@/data/store';
 import { db, getLocalUpdatedAt, upsertLocal, type SyncedTable } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 
@@ -48,6 +49,7 @@ export async function syncNow(): Promise<void> {
   try {
     await pushOutbox();
     await pullAll();
+    notifyDataChanged();
   } catch (err) {
     console.warn('[sync] failed, will retry on next trigger', err);
   } finally {

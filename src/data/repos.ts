@@ -1,16 +1,19 @@
 import * as Crypto from 'expo-crypto';
 
+import { notifyDataChanged } from '@/data/store';
 import { db, upsertLocal, type SyncedTable } from '@/lib/db';
 import { enqueue } from '@/sync/engine';
+import type { Trail } from './trails';
 
-// All UI reads and writes go through here — SQLite first, then the outbox.
-// Dates are ISO yyyy-mm-dd strings; timestamps are ISO-8601 UTC.
+// All writes go through here — SQLite first, then the outbox, then a store
+// notification so the UI re-reads. Date keys are local-time yyyy-mm-dd.
 
 const nowIso = () => new Date().toISOString();
 
 function write(table: SyncedTable, row: Record<string, unknown>): void {
   upsertLocal(table, row);
   enqueue(table, row);
+  notifyDataChanged();
 }
 
 /** Reuse the row id for a natural key so re-logging never duplicates. */
@@ -19,12 +22,10 @@ function existingId(sql: string, param: string): string {
   return row?.id ?? Crypto.randomUUID();
 }
 
-// -- Workouts ---------------------------------------------------------------
-
-export function completeWorkout(workoutDate: string, details: object = {}): void {
+export function completeWorkout(dateKey: string, details: object = {}): void {
   write('workout_completions', {
-    id: existingId('select id from workout_completions where workout_date = ?', workoutDate),
-    workout_date: workoutDate,
+    id: existingId('select id from workout_completions where workout_date = ?', dateKey),
+    workout_date: dateKey,
     program_version: 1,
     details,
     completed_at: nowIso(),
@@ -33,155 +34,84 @@ export function completeWorkout(workoutDate: string, details: object = {}): void
   });
 }
 
-export function uncompleteWorkout(workoutDate: string): void {
-  const row = db.getFirstSync<Record<string, unknown>>(
-    'select * from workout_completions where workout_date = ?',
-    [workoutDate],
+export function uncompleteWorkout(dateKey: string): void {
+  const row = db.getFirstSync<{ id: string; details: string; completed_at: string }>(
+    'select id, details, completed_at from workout_completions where workout_date = ?',
+    [dateKey],
   );
   if (row) {
-    write('workout_completions', { ...row, deleted_at: nowIso(), updated_at: nowIso() });
+    write('workout_completions', {
+      id: row.id,
+      workout_date: dateKey,
+      program_version: 1,
+      details: JSON.parse(row.details || '{}'),
+      completed_at: row.completed_at,
+      updated_at: nowIso(),
+      deleted_at: nowIso(),
+    });
   }
 }
 
-export function getCompletion(workoutDate: string) {
-  return db.getFirstSync<Record<string, unknown>>(
-    'select * from workout_completions where workout_date = ? and deleted_at is null',
-    [workoutDate],
-  );
-}
-
-// -- Weight -----------------------------------------------------------------
-
-export function logWeight(measuredOn: string, weightLbs: number): void {
+export function logWeight(dateKey: string, weightLbs: number): void {
   write('weight_entries', {
-    id: existingId('select id from weight_entries where measured_on = ?', measuredOn),
-    measured_on: measuredOn,
+    id: existingId('select id from weight_entries where measured_on = ?', dateKey),
+    measured_on: dateKey,
     weight_lbs: weightLbs,
     updated_at: nowIso(),
     deleted_at: null,
   });
 }
 
-export function getWeightEntries() {
-  return db.getAllSync<{ measured_on: string; weight_lbs: number }>(
-    'select measured_on, weight_lbs from weight_entries where deleted_at is null order by measured_on',
-  );
-}
-
-// -- Fuel -------------------------------------------------------------------
-
-export interface CalorieEntryInput {
-  loggedOn: string;
-  label?: string;
-  calories: number;
-  proteinG?: number;
-  carbsG?: number;
-  fatG?: number;
-}
-
-export function addCalorieEntry(input: CalorieEntryInput): string {
-  const id = Crypto.randomUUID();
+/** One total per day, like the design's calorie log. */
+export function setDailyCalories(dateKey: string, calories: number): void {
   write('calorie_entries', {
-    id,
-    logged_on: input.loggedOn,
-    label: input.label ?? null,
-    calories: input.calories,
-    protein_g: input.proteinG ?? null,
-    carbs_g: input.carbsG ?? null,
-    fat_g: input.fatG ?? null,
+    id: existingId(
+      'select id from calorie_entries where logged_on = ? and deleted_at is null',
+      dateKey,
+    ),
+    logged_on: dateKey,
+    label: null,
+    calories,
+    protein_g: null,
+    carbs_g: null,
+    fat_g: null,
     updated_at: nowIso(),
     deleted_at: null,
   });
-  return id;
 }
 
-export function removeCalorieEntry(id: string): void {
-  const row = db.getFirstSync<Record<string, unknown>>(
-    'select * from calorie_entries where id = ?',
-    [id],
-  );
-  if (row) {
-    write('calorie_entries', { ...row, deleted_at: nowIso(), updated_at: nowIso() });
-  }
-}
-
-export function getCalorieEntries(loggedOn: string) {
-  return db.getAllSync<Record<string, unknown>>(
-    'select * from calorie_entries where logged_on = ? and deleted_at is null order by updated_at',
-    [loggedOn],
-  );
-}
-
-// -- Badges -----------------------------------------------------------------
-
-export function awardBadge(badgeKey: string): void {
+/** Earn dates are permanent; earnedOnKey preserves back-dated earns (e.g. lb_5). */
+export function awardBadge(badgeKey: string, earnedOnKey?: string): void {
   const existing = db.getFirstSync<{ id: string }>(
     'select id from earned_badges where badge_key = ? and deleted_at is null',
     [badgeKey],
   );
   if (existing) {
-    return; // earn date is permanent
+    return;
   }
   write('earned_badges', {
     id: Crypto.randomUUID(),
     badge_key: badgeKey,
-    earned_at: nowIso(),
+    earned_at: earnedOnKey ? earnedOnKey + 'T00:00:00.000Z' : nowIso(),
     updated_at: nowIso(),
     deleted_at: null,
   });
 }
 
-export function getEarnedBadges() {
-  return db.getAllSync<{ badge_key: string; earned_at: string }>(
-    'select badge_key, earned_at from earned_badges where deleted_at is null order by earned_at',
-  );
-}
-
-// -- Hikes ------------------------------------------------------------------
-
-export interface HikeLogInput {
-  trailId?: string;
-  name: string;
-  hikedOn: string;
-  distanceMi?: number;
-  gainFt?: number;
-  durationMin?: number;
-  packLbs?: number;
-  notes?: string;
-}
-
-export function logHike(input: HikeLogInput): string {
-  const id = Crypto.randomUUID();
+/** Logging a hike also marks that day's workout complete (design behavior). */
+export function logHike(trail: Trail, dateKey: string): void {
   write('hike_logs', {
-    id,
-    trail_id: input.trailId ?? null,
-    name: input.name,
-    hiked_on: input.hikedOn,
-    distance_mi: input.distanceMi ?? null,
-    gain_ft: input.gainFt ?? null,
-    duration_min: input.durationMin ?? null,
-    pack_lbs: input.packLbs ?? null,
-    notes: input.notes ?? null,
+    id: existingId('select id from hike_logs where hiked_on = ?', dateKey),
+    trail_id: trail.id,
+    name: trail.name,
+    hiked_on: dateKey,
+    distance_mi: trail.dist,
+    gain_ft: trail.gain,
+    duration_min: null,
+    pack_lbs: null,
+    notes: null,
     updated_at: nowIso(),
     deleted_at: null,
   });
-  return id;
-}
-
-export function getHikeLogs() {
-  return db.getAllSync<Record<string, unknown>>(
-    'select * from hike_logs where deleted_at is null order by hiked_on desc',
-  );
-}
-
-// -- Program (pull-only; seeded via scripts/seed-program.ts) -----------------
-
-export function getProgramDaysForWeek(week: number) {
-  return db.getAllSync<Record<string, unknown>>(
-    `select pd.* from program_days pd
-     join programs p on p.id = pd.program_id
-     where pd.week = ? and p.version = (select max(version) from programs)
-     order by pd.day`,
-    [week],
-  );
+  completeWorkout(dateKey, { hike: trail.id });
 }
