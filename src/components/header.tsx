@@ -15,6 +15,7 @@ interface Props {
   lostW: string;
   onOpenSummit: () => void;
   onPickWeek: (week: number) => void;
+  onOpenCalibration: () => void;
 }
 
 export function Header({
@@ -26,6 +27,7 @@ export function Header({
   lostW,
   onOpenSummit,
   onPickWeek,
+  onOpenCalibration,
 }: Props) {
   const week = currentWeek();
   const pts = ridge();
@@ -37,10 +39,12 @@ export function Header({
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
-        <Logo size={42} />
-        <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
-          SWITCH<Text style={{ color: palette.orange }}>BACK</Text>
-        </Text>
+        <View style={styles.brandRow}>
+          <Logo size={42} />
+          <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
+            SWITCH<Text style={{ color: palette.orange }}>BACK</Text>
+          </Text>
+        </View>
         <Pressable onPress={onOpenSummit} style={styles.summitBtn}>
           <Svg viewBox="0 0 24 24" width={20} height={20}>
             <Path
@@ -55,6 +59,21 @@ export function Header({
             <Text style={styles.summitLabel}>SUMMIT LOG</Text>
             <Text style={styles.summitCount}>{badgeCountLine}</Text>
           </View>
+        </Pressable>
+      </View>
+
+      <View style={styles.metaRow}>
+        <Text style={styles.meta} numberOfLines={1} adjustsFontSizeToFit>
+          {metaLine}
+        </Text>
+        <Pressable onPress={onOpenCalibration} style={styles.calibrateBtn}>
+          <Svg viewBox="0 0 24 24" width={20} height={20}>
+            <Path d="M2 12 L22 12" stroke={palette.muted} strokeWidth={1.6} strokeLinecap="round" />
+            <Path d="M5 9 L5 15" stroke={palette.muted} strokeWidth={1.6} strokeLinecap="round" />
+            <Path d="M8 7 L8 17" stroke={palette.muted} strokeWidth={1.6} strokeLinecap="round" />
+            <Path d="M16 7 L16 17" stroke={palette.muted} strokeWidth={1.6} strokeLinecap="round" />
+            <Path d="M19 9 L19 15" stroke={palette.muted} strokeWidth={1.6} strokeLinecap="round" />
+          </Svg>
         </Pressable>
       </View>
 
@@ -131,7 +150,7 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 10,
   },
   brandRow: {
@@ -142,18 +161,26 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
+    flexShrink: 1,
     fontFamily: FontFamily.displaySemiBold,
     fontSize: 24,
     letterSpacing: 2.5,
     lineHeight: 28,
     color: palette.text,
   },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 8,
+  },
   meta: {
+    flex: 1,
+    minWidth: 0,
     fontFamily: FontFamily.mono,
     fontSize: 13,
     color: palette.muted,
     letterSpacing: 1,
-    marginTop: 4,
   },
   calibrateBtn: {
     alignItems: 'center',
