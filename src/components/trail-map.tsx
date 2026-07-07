@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   },
   fallbackText: {
     fontFamily: FontFamily.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: palette.faint,
     letterSpacing: 1,
     textAlign: 'center',

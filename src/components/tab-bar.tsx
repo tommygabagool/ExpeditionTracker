@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: FontFamily.display,
-    fontSize: 11,
+    fontSize: 13,
     letterSpacing: 2,
   },
 });

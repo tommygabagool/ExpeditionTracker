@@ -95,16 +95,16 @@ export function Header({
           />
         ))}
         <Circle cx={nowPt.x} cy={nowPt.y} r={8} fill="none" stroke={palette.gold} strokeWidth={1.5} />
-        <SvgText x={nowPt.x} y={nowPt.y - 14} textAnchor="middle" fill={palette.gold} fontFamily={FontFamily.mono} fontSize={9} letterSpacing={1.5}>
+        <SvgText x={nowPt.x} y={nowPt.y - 14} textAnchor="middle" fill={palette.gold} fontFamily={FontFamily.mono} fontSize={11} letterSpacing={1.5}>
           NOW
         </SvgText>
-        <SvgText x={15} y={136} fill={palette.green} fontFamily={FontFamily.display} fontSize={10} letterSpacing={1.5}>
+        <SvgText x={15} y={136} fill={palette.green} fontFamily={FontFamily.display} fontSize={12} letterSpacing={1.5}>
           BASE CAMP
         </SvgText>
-        <SvgText x={195} y={136} textAnchor="middle" fill={palette.blue} fontFamily={FontFamily.display} fontSize={10} letterSpacing={1.5}>
+        <SvgText x={195} y={136} textAnchor="middle" fill={palette.blue} fontFamily={FontFamily.display} fontSize={12} letterSpacing={1.5}>
           LOAD CAMP
         </SvgText>
-        <SvgText x={375} y={136} textAnchor="end" fill={palette.orange} fontFamily={FontFamily.display} fontSize={10} letterSpacing={1.5}>
+        <SvgText x={375} y={136} textAnchor="end" fill={palette.orange} fontFamily={FontFamily.display} fontSize={12} letterSpacing={1.5}>
           ALPINE PUSH
         </SvgText>
       </Svg>
@@ -148,14 +148,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 22,
+    fontSize: 24,
     letterSpacing: 2.5,
-    lineHeight: 24,
+    lineHeight: 28,
     color: palette.text,
   },
   meta: {
     fontFamily: FontFamily.mono,
-    fontSize: 10.5,
+    fontSize: 13,
     color: palette.muted,
     letterSpacing: 1,
     marginTop: 4,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.border,
     paddingHorizontal: 9,
-    minHeight: 40,
+    minHeight: 44,
   },
   summitBtn: {
     flexDirection: 'row',
@@ -178,20 +178,20 @@ const styles = StyleSheet.create({
     borderColor: palette.border,
     paddingVertical: 7,
     paddingHorizontal: 10,
-    minHeight: 40,
+    minHeight: 44,
   },
   summitLabel: {
     fontFamily: FontFamily.display,
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 1.5,
     color: palette.muted,
-    lineHeight: 10,
+    lineHeight: 12,
   },
   summitCount: {
     fontFamily: FontFamily.mono,
-    fontSize: 12,
+    fontSize: 14,
     color: palette.gold,
-    lineHeight: 15,
+    lineHeight: 18,
   },
   ridge: {
     width: '100%',
@@ -215,11 +215,11 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontFamily: FontFamily.display,
-    fontSize: 9.5,
+    fontSize: 12,
     letterSpacing: 1.5,
   },
   statValue: {
-    fontSize: 17,
+    fontSize: 20,
     marginTop: 3,
   },
 });

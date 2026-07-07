@@ -88,7 +88,7 @@ export function FuelTab({ data }: { data: AppData }) {
             {MAINTENANCE_CALORIES.toLocaleString('en-US')}
           </Text>
         </View>
-        <Text style={{ color: palette.orange, fontSize: 18 }}>→</Text>
+        <Text style={{ color: palette.orange, fontSize: 20 }}>→</Text>
         <View style={styles.targetCell}>
           <Text style={[styles.targetLabel, { color: palette.orange }]}>DAILY TARGET</Text>
           <Text style={[styles.targetValue, styles.targetBold, { color: palette.orange }]}>
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   panelTitle: {
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 2,
     color: palette.text,
   },
@@ -202,8 +202,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   targetCell: { alignItems: 'center', flex: 1 },
-  targetLabel: { fontFamily: FontFamily.display, fontSize: 10, letterSpacing: 1.5 },
-  targetValue: { fontFamily: FontFamily.mono, fontSize: 22, marginTop: 4 },
+  targetLabel: { fontFamily: FontFamily.display, fontSize: 12, letterSpacing: 1.5 },
+  targetValue: { fontFamily: FontFamily.mono, fontSize: 24, marginTop: 4 },
   targetBold: { fontFamily: FontFamily.monoBold },
   macroRow: { flexDirection: 'row', gap: 8 },
   macroCard: {
@@ -215,9 +215,9 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
   },
-  macroGrams: { fontFamily: FontFamily.monoBold, fontSize: 20, color: palette.text },
-  macroLabel: { fontFamily: FontFamily.display, fontSize: 10, letterSpacing: 1.5, marginTop: 3 },
-  macroKcal: { fontFamily: FontFamily.body, fontSize: 10.5, color: palette.muted, marginTop: 3 },
+  macroGrams: { fontFamily: FontFamily.monoBold, fontSize: 22, color: palette.text },
+  macroLabel: { fontFamily: FontFamily.display, fontSize: 12, letterSpacing: 1.5, marginTop: 3 },
+  macroKcal: { fontFamily: FontFamily.body, fontSize: 13, color: palette.muted, marginTop: 3 },
   input: {
     flex: 1,
     backgroundColor: palette.bg,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     borderColor: palette.line,
     color: palette.text,
     fontFamily: FontFamily.mono,
-    fontSize: 15,
+    fontSize: 17,
     paddingVertical: 11,
     paddingHorizontal: 12,
     minHeight: 44,
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   logBtnText: {
     color: palette.bg,
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 2,
   },
   avgRow: {
@@ -252,8 +252,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: palette.line,
   },
-  avgLabel: { fontFamily: FontFamily.display, fontSize: 10, letterSpacing: 1.5, color: palette.muted },
-  avgValue: { fontFamily: FontFamily.mono, fontSize: 16 },
+  avgLabel: { fontFamily: FontFamily.display, fontSize: 12, letterSpacing: 1.5, color: palette.muted },
+  avgValue: { fontFamily: FontFamily.mono, fontSize: 18 },
   calRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -262,11 +262,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: palette.line,
   },
-  calDate: { fontFamily: FontFamily.mono, fontSize: 11.5, color: palette.muted },
-  calKcal: { fontFamily: FontFamily.mono, fontSize: 13, color: palette.text },
-  calDelta: { fontFamily: FontFamily.mono, fontSize: 11, width: 52, textAlign: 'right' },
-  guideTitle: { fontFamily: FontFamily.display, fontSize: 11, letterSpacing: 1.5 },
-  guideBody: { fontFamily: FontFamily.body, fontSize: 13, color: palette.textDim, marginTop: 4, lineHeight: 21 },
+  calDate: { fontFamily: FontFamily.mono, fontSize: 14, color: palette.muted },
+  calKcal: { fontFamily: FontFamily.mono, fontSize: 15, color: palette.text },
+  calDelta: { fontFamily: FontFamily.mono, fontSize: 13, width: 64, textAlign: 'right' },
+  guideTitle: { fontFamily: FontFamily.display, fontSize: 13, letterSpacing: 1.5 },
+  guideBody: { fontFamily: FontFamily.body, fontSize: 15, color: palette.textDim, marginTop: 4, lineHeight: 25 },
   mealRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: palette.line,
   },
-  mealSlot: { fontFamily: FontFamily.display, fontSize: 11, letterSpacing: 1.5, color: palette.muted },
-  mealFood: { fontFamily: FontFamily.body, fontSize: 13, color: palette.text, marginTop: 2, lineHeight: 19 },
-  mealKcal: { fontFamily: FontFamily.mono, fontSize: 12.5, color: palette.textDim },
+  mealSlot: { fontFamily: FontFamily.display, fontSize: 13, letterSpacing: 1.5, color: palette.muted },
+  mealFood: { fontFamily: FontFamily.body, fontSize: 15, color: palette.text, marginTop: 2, lineHeight: 22 },
+  mealKcal: { fontFamily: FontFamily.mono, fontSize: 14, color: palette.textDim },
 });

@@ -5,7 +5,8 @@
       "WebSearch",
       "WebFetch(domain:fitnesscalcs.com)",
       "WebFetch(domain:exrx.net)",
-      "PowerShell(npx expo install @expo-google-fonts/alfa-slab-one @expo-google-fonts/source-sans-3 @expo-google-fonts/space-mono)"
+      "PowerShell(npx expo install @expo-google-fonts/alfa-slab-one @expo-google-fonts/source-sans-3 @expo-google-fonts/space-mono)",
+      "PowerShell(node \"C:\\\\Users\\\\tommi\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Dev-ExpeditionTracker\\\\dec39071-cdd9-47b8-adb7-067051f3efab\\\\scratchpad\\\\scale-type.js\")"
     ]
   }
 }

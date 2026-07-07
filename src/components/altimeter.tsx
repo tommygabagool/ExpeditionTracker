@@ -85,25 +85,25 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: FontFamily.display,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 2,
     color: palette.muted,
   },
   streak: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   streakText: {
     fontFamily: FontFamily.monoBold,
-    fontSize: 11,
+    fontSize: 13,
     letterSpacing: 0.5,
   },
   altRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 2 },
   altitude: {
     fontFamily: FontFamily.displayBold,
-    fontSize: 34,
+    fontSize: 38,
     color: palette.text,
   },
   altUnit: {
     fontFamily: FontFamily.mono,
-    fontSize: 13,
+    fontSize: 15,
     color: palette.muted,
   },
   rankTrack: {
@@ -116,14 +116,14 @@ const styles = StyleSheet.create({
   rankFill: { height: '100%', backgroundColor: palette.orange },
   rankLine: {
     fontFamily: FontFamily.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: palette.muted,
     marginTop: 6,
     letterSpacing: 0.3,
   },
   todayLine: {
     fontFamily: FontFamily.monoBold,
-    fontSize: 11,
+    fontSize: 13,
     marginTop: 10,
   },
 });

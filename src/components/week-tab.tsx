@@ -153,14 +153,14 @@ export function WeekTab({ data, week, onChangeWeek }: Props) {
 
         <Svg viewBox="0 0 366 190" style={styles.chart}>
           <Line x1={34} y1={wc.goalY} x2={360} y2={wc.goalY} stroke={palette.gold} strokeWidth={1} strokeDasharray="5 4" />
-          <SvgText x={360} y={wc.goalLabelY} textAnchor="end" fill={palette.gold} fontFamily={FontFamily.mono} fontSize={9} letterSpacing={1}>
+          <SvgText x={360} y={wc.goalLabelY} textAnchor="end" fill={palette.gold} fontFamily={FontFamily.mono} fontSize={11} letterSpacing={1}>
             {'GOAL ' + GOAL_WEIGHT_LB}
           </SvgText>
           {wc.gridLines.map((g) => (
             <Line key={g.label} x1={34} y1={g.y} x2={360} y2={g.y} stroke={palette.line} strokeWidth={1} />
           ))}
           {wc.gridLines.map((g) => (
-            <SvgText key={g.label} x={30} y={g.labelY} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={9}>
+            <SvgText key={g.label} x={30} y={g.labelY} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
               {g.label}
             </SvgText>
           ))}
@@ -169,10 +169,10 @@ export function WeekTab({ data, week, onChangeWeek }: Props) {
           {wc.points.map((p, i) => (
             <Circle key={i} cx={p.x} cy={p.y} r={3} fill={palette.gold} stroke={palette.bg} strokeWidth={1.5} />
           ))}
-          <SvgText x={34} y={186} fill={palette.faint} fontFamily={FontFamily.mono} fontSize={9}>
+          <SvgText x={34} y={186} fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
             JUL 05
           </SvgText>
-          <SvgText x={360} y={186} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={9}>
+          <SvgText x={360} y={186} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
             JAN 02
           </SvgText>
         </Svg>
@@ -203,23 +203,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   navBtn: {
-    width: 38,
-    height: 38,
+    width: 46,
+    height: 46,
     backgroundColor: palette.panel,
     borderWidth: 1,
     borderColor: palette.line,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  navGlyph: { color: palette.textDim, fontSize: 16, lineHeight: 20 },
+  navGlyph: { color: palette.textDim, fontSize: 18, lineHeight: 24 },
   weekTitle: {
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 16,
+    fontSize: 18,
     letterSpacing: 1.5,
   },
   deloadPill: {
     fontFamily: FontFamily.display,
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 1.5,
     color: palette.gold,
     borderWidth: 1,
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   },
   weekSub: {
     fontFamily: FontFamily.mono,
-    fontSize: 10.5,
+    fontSize: 13,
     color: palette.muted,
     letterSpacing: 1,
     marginTop: 2,
@@ -251,20 +251,20 @@ const styles = StyleSheet.create({
   },
   dayAbbr: {
     fontFamily: FontFamily.mono,
-    fontSize: 11,
+    fontSize: 13,
     color: palette.muted,
-    width: 58,
-    lineHeight: 15,
+    width: 68,
+    lineHeight: 18,
   },
   dayTitle: {
     flex: 1,
     fontFamily: FontFamily.displayMedium,
-    fontSize: 15,
+    fontSize: 17,
     letterSpacing: 1,
     color: palette.text,
   },
-  doneMark: { fontFamily: FontFamily.mono, fontSize: 14 },
-  chev: { color: palette.faint, fontSize: 12 },
+  doneMark: { fontFamily: FontFamily.mono, fontSize: 16 },
+  chev: { color: palette.faint, fontSize: 14 },
   dayExercises: {
     paddingTop: 2,
     paddingBottom: 12,
@@ -280,10 +280,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: palette.line,
   },
-  exerciseName: { fontFamily: FontFamily.body, fontSize: 13, color: palette.text },
+  exerciseName: { fontFamily: FontFamily.body, fontSize: 15, color: palette.text },
   detailGroup: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  exerciseDetail: { fontFamily: FontFamily.mono, fontSize: 11.5, color: palette.textDim },
-  exerciseWeight: { fontFamily: FontFamily.monoBold, fontSize: 11.5, color: palette.gold },
+  exerciseDetail: { fontFamily: FontFamily.mono, fontSize: 14, color: palette.textDim },
+  exerciseWeight: { fontFamily: FontFamily.monoBold, fontSize: 14, color: palette.gold },
   weightCard: {
     backgroundColor: palette.panel,
     borderWidth: 1,
@@ -298,11 +298,11 @@ const styles = StyleSheet.create({
   },
   weightTitle: {
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 2,
     color: palette.text,
   },
-  weightCurrent: { fontFamily: FontFamily.mono, fontSize: 13, color: palette.gold },
+  weightCurrent: { fontFamily: FontFamily.mono, fontSize: 15, color: palette.gold },
   input: {
     flex: 1,
     backgroundColor: palette.bg,
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     borderColor: palette.line,
     color: palette.text,
     fontFamily: FontFamily.mono,
-    fontSize: 15,
+    fontSize: 17,
     paddingVertical: 11,
     paddingHorizontal: 12,
     minHeight: 44,
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   logBtnText: {
     color: palette.bg,
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 2,
   },
   chart: { width: '100%', aspectRatio: 366 / 190, marginTop: 12 },
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: palette.line,
   },
-  wtDate: { fontFamily: FontFamily.mono, fontSize: 11.5, color: palette.muted },
-  wtLb: { fontFamily: FontFamily.mono, fontSize: 14, color: palette.text },
-  wtDelta: { fontFamily: FontFamily.mono, fontSize: 11, width: 52, textAlign: 'right' },
+  wtDate: { fontFamily: FontFamily.mono, fontSize: 14, color: palette.muted },
+  wtLb: { fontFamily: FontFamily.mono, fontSize: 16, color: palette.text },
+  wtDelta: { fontFamily: FontFamily.mono, fontSize: 13, width: 64, textAlign: 'right' },
 });

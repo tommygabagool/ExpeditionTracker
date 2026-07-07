@@ -93,6 +93,8 @@ export default function AppScreen() {
     <View style={styles.root}>
       <ScrollView
         style={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
         contentInsetAdjustmentBehavior="never">
         <View style={{ height: insets.top }} />

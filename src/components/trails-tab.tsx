@@ -68,7 +68,7 @@ function TrailCard({ trail, onOpen, bordered }: { trail: Trail; onOpen: () => vo
         </View>
         <Text style={styles.cardStats}>{statLine(trail)}</Text>
       </View>
-      {bordered && <Text style={{ color: palette.faint, fontSize: 14 }}>›</Text>}
+      {bordered && <Text style={{ color: palette.faint, fontSize: 16 }}>›</Text>}
     </Pressable>
   );
 }
@@ -163,18 +163,18 @@ export function TrailsTab({ data }: { data: AppData }) {
             <Svg viewBox="0 0 358 130" style={{ width: '100%', aspectRatio: 358 / 130, marginTop: 6 }}>
               <Line x1={38} y1={18} x2={348} y2={18} stroke={palette.line} strokeWidth={1} strokeDasharray="2 4" />
               <Line x1={38} y1={114} x2={348} y2={114} stroke={palette.line} strokeWidth={1} />
-              <SvgText x={34} y={21} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={8.5}>
+              <SvgText x={34} y={21} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
                 {sel.gain.toLocaleString('en-US') + ' FT'}
               </SvgText>
-              <SvgText x={34} y={117} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={8.5}>
+              <SvgText x={34} y={117} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
                 0
               </SvgText>
               <Path d={prof.area} fill={palette.orange} opacity={0.12} />
               <Path d={prof.line} fill="none" stroke={palette.orange} strokeWidth={2} strokeLinejoin="round" />
-              <SvgText x={38} y={128} fill={palette.faint} fontFamily={FontFamily.mono} fontSize={8.5}>
+              <SvgText x={38} y={128} fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
                 0 MI
               </SvgText>
-              <SvgText x={348} y={128} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={8.5}>
+              <SvgText x={348} y={128} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
                 {sel.dist.toFixed(1)} MI
               </SvgText>
             </Svg>
@@ -253,15 +253,15 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     borderWidth: 1,
     borderColor: palette.border,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    minHeight: 38,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    minHeight: 44,
     justifyContent: 'center',
   },
   backText: {
     color: palette.textDim,
     fontFamily: FontFamily.display,
-    fontSize: 11,
+    fontSize: 13,
     letterSpacing: 1.5,
   },
   detailPanel: {
@@ -271,15 +271,15 @@ const styles = StyleSheet.create({
   },
   panelTitle: {
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 2,
     color: palette.text,
   },
-  satDate: { fontFamily: FontFamily.mono, fontSize: 11, color: palette.muted },
-  satRx: { fontFamily: FontFamily.mono, fontSize: 16, color: palette.gold, marginTop: 8 },
+  satDate: { fontFamily: FontFamily.mono, fontSize: 13, color: palette.muted },
+  satRx: { fontFamily: FontFamily.mono, fontSize: 18, color: palette.gold, marginTop: 8 },
   sectionLabel: {
     fontFamily: FontFamily.display,
-    fontSize: 11,
+    fontSize: 13,
     letterSpacing: 1.5,
     color: palette.muted,
     marginTop: 16,
@@ -301,43 +301,49 @@ const styles = StyleSheet.create({
   cardName: {
     flex: 1,
     fontFamily: FontFamily.displayMedium,
-    fontSize: 14,
+    fontSize: 16,
     letterSpacing: 0.5,
-    lineHeight: 17,
+    lineHeight: 20,
     color: palette.text,
   },
   cardDiff: {
     fontFamily: FontFamily.display,
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 1,
     borderWidth: 1,
     paddingVertical: 2,
     paddingHorizontal: 6,
     overflow: 'hidden',
   },
-  cardStats: { fontFamily: FontFamily.mono, fontSize: 10.5, color: palette.muted, marginTop: 6, lineHeight: 17 },
+  cardStats: { fontFamily: FontFamily.mono, fontSize: 13, color: palette.muted, marginTop: 6, lineHeight: 20 },
   chipRowLabel: {
     fontFamily: FontFamily.mono,
-    fontSize: 9,
+    fontSize: 11,
     color: palette.faint,
     letterSpacing: 1,
-    width: 42,
+    width: 52,
   },
-  chip: { borderWidth: 1, paddingVertical: 6, paddingHorizontal: 10 },
-  chipText: { fontFamily: FontFamily.display, fontSize: 10, letterSpacing: 1 },
+  chip: {
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  chipText: { fontFamily: FontFamily.display, fontSize: 12, letterSpacing: 1 },
   noTrails: {
     textAlign: 'center',
     color: palette.faint,
     fontFamily: FontFamily.mono,
-    fontSize: 11,
+    fontSize: 13,
     paddingVertical: 24,
   },
   detailName: {
     flex: 1,
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 20,
+    fontSize: 22,
     letterSpacing: 1,
-    lineHeight: 23,
+    lineHeight: 27,
     color: palette.text,
   },
   detailStats: {
@@ -355,10 +361,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     alignItems: 'center',
   },
-  detailStatLabel: { fontFamily: FontFamily.display, fontSize: 8.5, letterSpacing: 1, color: palette.muted },
-  detailStatValue: { fontFamily: FontFamily.mono, fontSize: 13, color: palette.text, marginTop: 3 },
-  trailheadText: { fontFamily: FontFamily.body, fontSize: 13, color: palette.text, marginTop: 4, lineHeight: 20 },
-  notesText: { fontFamily: FontFamily.body, fontSize: 13, color: palette.textDim, marginTop: 10, lineHeight: 21 },
+  detailStatLabel: { fontFamily: FontFamily.display, fontSize: 11, letterSpacing: 1, color: palette.muted },
+  detailStatValue: { fontFamily: FontFamily.mono, fontSize: 15, color: palette.text, marginTop: 3 },
+  trailheadText: { fontFamily: FontFamily.body, fontSize: 15, color: palette.text, marginTop: 4, lineHeight: 24 },
+  notesText: { fontFamily: FontFamily.body, fontSize: 15, color: palette.textDim, marginTop: 10, lineHeight: 25 },
   logHikeBtn: {
     marginTop: 18,
     borderWidth: 1,
@@ -370,7 +376,7 @@ const styles = StyleSheet.create({
   logHikeText: {
     color: palette.bg,
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 2,
   },
 });

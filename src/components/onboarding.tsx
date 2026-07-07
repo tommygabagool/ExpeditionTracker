@@ -65,6 +65,8 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
   return (
     <View style={styles.root}>
       <ScrollView
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         contentContainerStyle={{
           paddingTop: insets.top + 18,
           paddingBottom: insets.bottom + 32,
@@ -194,22 +196,22 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.bg },
   kicker: {
     fontFamily: FontFamily.mono,
-    fontSize: 10.5,
+    fontSize: 13,
     letterSpacing: 3,
     color: palette.orange,
   },
   title: {
     fontFamily: FontFamily.displayBold,
-    fontSize: 32,
+    fontSize: 34,
     letterSpacing: 2,
     color: palette.text,
     marginTop: 6,
   },
   subtitle: {
     fontFamily: FontFamily.body,
-    fontSize: 13,
+    fontSize: 15,
     color: palette.textDim,
-    lineHeight: 20,
+    lineHeight: 24,
     marginTop: 6,
   },
   disclaimer: {
@@ -220,9 +222,9 @@ const styles = StyleSheet.create({
   },
   disclaimerText: {
     fontFamily: FontFamily.body,
-    fontSize: 12.5,
+    fontSize: 14,
     color: palette.gold,
-    lineHeight: 19,
+    lineHeight: 22,
   },
   panel: {
     backgroundColor: palette.panel,
@@ -232,60 +234,61 @@ const styles = StyleSheet.create({
   },
   panelTitle: {
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 2,
     color: palette.text,
   },
   bwInput: {
-    width: 110,
+    width: 128,
     backgroundColor: palette.bg,
     borderWidth: 1,
     borderColor: palette.line,
     color: palette.text,
     fontFamily: FontFamily.mono,
-    fontSize: 18,
+    fontSize: 20,
     paddingVertical: 10,
     paddingHorizontal: 12,
     textAlign: 'center',
   },
-  unit: { fontFamily: FontFamily.mono, fontSize: 12, color: palette.muted, letterSpacing: 1 },
+  unit: { fontFamily: FontFamily.mono, fontSize: 14, color: palette.muted, letterSpacing: 1 },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    paddingVertical: 11,
+    paddingVertical: 14,
     paddingHorizontal: 12,
+    minHeight: 48,
   },
   optionDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.5 },
   optionLabel: {
     fontFamily: FontFamily.displayMedium,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 1.5,
-    width: 104,
+    width: 122,
   },
-  optionSub: { fontFamily: FontFamily.mono, fontSize: 10.5, color: palette.faint, flex: 1 },
+  optionSub: { fontFamily: FontFamily.mono, fontSize: 13, color: palette.faint, flex: 1 },
   calHint: {
     fontFamily: FontFamily.body,
-    fontSize: 12,
+    fontSize: 14,
     color: palette.textDim,
-    lineHeight: 18,
+    lineHeight: 21,
     marginTop: 8,
   },
   calRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  calLabel: { fontFamily: FontFamily.body, fontSize: 13, color: palette.text, width: 118 },
+  calLabel: { fontFamily: FontFamily.body, fontSize: 15, color: palette.text, width: 132 },
   calInput: {
-    width: 72,
+    width: 88,
     backgroundColor: palette.bg,
     borderWidth: 1,
     borderColor: palette.line,
     color: palette.text,
     fontFamily: FontFamily.mono,
-    fontSize: 14,
+    fontSize: 16,
     paddingVertical: 8,
     textAlign: 'center',
   },
-  calSeed: { fontFamily: FontFamily.mono, fontSize: 10.5, color: palette.gold, flex: 1 },
+  calSeed: { fontFamily: FontFamily.mono, fontSize: 13, color: palette.gold, flex: 1 },
   primaryBtn: {
     backgroundColor: palette.orange,
     minHeight: 48,
@@ -296,7 +299,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: palette.bg,
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 2,
   },
   ghostBtn: {
@@ -309,7 +312,7 @@ const styles = StyleSheet.create({
   ghostBtnText: {
     color: palette.muted,
     fontFamily: FontFamily.display,
-    fontSize: 10.5,
+    fontSize: 13,
     letterSpacing: 1.5,
   },
 });

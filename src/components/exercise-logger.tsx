@@ -119,6 +119,7 @@ export function ExerciseLogger({ name, detail, suggestion, logs, dateKey, week, 
               <View style={{ flex: 1 }} />
               <Pressable
                 onPress={() => update(i, { done: !r.done }, true)}
+                hitSlop={6}
                 style={[
                   styles.check,
                   {
@@ -126,7 +127,7 @@ export function ExerciseLogger({ name, detail, suggestion, logs, dateKey, week, 
                     backgroundColor: r.done ? palette.green : 'transparent',
                   },
                 ]}>
-                <Text style={{ fontSize: 13, lineHeight: 15, color: r.done ? palette.bg : palette.faint }}>
+                <Text style={{ fontSize: 15, lineHeight: 18, color: r.done ? palette.bg : palette.faint }}>
                   ✓
                 </Text>
               </Pressable>
@@ -148,11 +149,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'baseline',
     gap: 12,
-    paddingVertical: 9,
+    paddingVertical: 13,
   },
   name: {
     fontFamily: FontFamily.bodyMedium,
-    fontSize: 14,
+    fontSize: 16,
     color: palette.text,
   },
   headRight: {
@@ -162,17 +163,17 @@ const styles = StyleSheet.create({
   },
   detail: {
     fontFamily: FontFamily.mono,
-    fontSize: 12.5,
+    fontSize: 14,
     color: palette.textDim,
   },
   weight: {
     fontFamily: FontFamily.monoBold,
-    fontSize: 12.5,
+    fontSize: 14,
     color: palette.gold,
   },
   doneMark: {
     fontFamily: FontFamily.mono,
-    fontSize: 11,
+    fontSize: 13,
     width: 28,
     textAlign: 'right',
   },
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
   },
   lastLine: {
     fontFamily: FontFamily.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: palette.muted,
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -194,9 +195,9 @@ const styles = StyleSheet.create({
   },
   setLabel: {
     fontFamily: FontFamily.mono,
-    fontSize: 10,
+    fontSize: 12,
     color: palette.faint,
-    width: 22,
+    width: 28,
   },
   input: {
     backgroundColor: palette.bg,
@@ -204,18 +205,18 @@ const styles = StyleSheet.create({
     borderColor: palette.line,
     color: palette.text,
     fontFamily: FontFamily.mono,
-    fontSize: 13,
-    paddingVertical: 6,
+    fontSize: 15,
+    paddingVertical: 10,
     paddingHorizontal: 8,
     textAlign: 'center',
   },
-  weightInput: { width: 68 },
-  repsInput: { width: 48 },
-  times: { fontFamily: FontFamily.mono, fontSize: 11, color: palette.faint },
+  weightInput: { width: 84 },
+  repsInput: { width: 60 },
+  times: { fontFamily: FontFamily.mono, fontSize: 13, color: palette.faint },
   check: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',

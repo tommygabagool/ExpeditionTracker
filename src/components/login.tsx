@@ -87,22 +87,22 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.bg },
   kicker: {
     fontFamily: FontFamily.mono,
-    fontSize: 10.5,
+    fontSize: 13,
     letterSpacing: 3,
     color: palette.orange,
   },
   title: {
     fontFamily: FontFamily.displayBold,
-    fontSize: 32,
+    fontSize: 34,
     letterSpacing: 2,
     color: palette.text,
     marginTop: 6,
   },
   subtitle: {
     fontFamily: FontFamily.body,
-    fontSize: 13,
+    fontSize: 15,
     color: palette.textDim,
-    lineHeight: 20,
+    lineHeight: 24,
     marginTop: 6,
   },
   panel: {
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontFamily: FontFamily.display,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 1.5,
     color: palette.muted,
   },
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     borderColor: palette.line,
     color: palette.text,
     fontFamily: FontFamily.mono,
-    fontSize: 15,
+    fontSize: 17,
     paddingVertical: 11,
     paddingHorizontal: 12,
     minHeight: 44,
@@ -132,9 +132,9 @@ const styles = StyleSheet.create({
   error: {
     marginTop: 12,
     fontFamily: FontFamily.mono,
-    fontSize: 11,
+    fontSize: 13,
     color: palette.orange,
-    lineHeight: 16,
+    lineHeight: 19,
   },
   primaryBtn: {
     backgroundColor: palette.orange,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: palette.bg,
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 2,
   },
   ghostBtn: {
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   ghostBtnText: {
     color: palette.muted,
     fontFamily: FontFamily.display,
-    fontSize: 10.5,
+    fontSize: 13,
     letterSpacing: 1.5,
   },
 });

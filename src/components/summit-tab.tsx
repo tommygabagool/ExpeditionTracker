@@ -145,12 +145,12 @@ export function SummitTab({ data, badges, ascent, onBack }: Props) {
             <Circle key={'c' + n.name} cx={n.x} cy={n.y} r={n.r} fill={n.fill} stroke={n.stroke} strokeWidth={2} />
           ))}
           {nodes.map((n) => (
-            <SvgText key={'t' + n.name} x={n.tx} y={n.y - 1} textAnchor={n.anchor} fill={n.labelColor} fontFamily={FontFamily.display} fontSize={11} letterSpacing={1}>
+            <SvgText key={'t' + n.name} x={n.tx} y={n.y - 1} textAnchor={n.anchor} fill={n.labelColor} fontFamily={FontFamily.display} fontSize={13} letterSpacing={1}>
               {n.name}
             </SvgText>
           ))}
           {nodes.map((n) => (
-            <SvgText key={'a' + n.name} x={n.tx} y={n.y + 10} textAnchor={n.anchor} fill={palette.faint} fontFamily={FontFamily.mono} fontSize={8.5}>
+            <SvgText key={'a' + n.name} x={n.tx} y={n.y + 10} textAnchor={n.anchor} fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
               {n.altCount}
             </SvgText>
           ))}
@@ -223,15 +223,15 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     borderWidth: 1,
     borderColor: palette.border,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    minHeight: 38,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    minHeight: 44,
     justifyContent: 'center',
   },
   backText: {
     color: palette.textDim,
     fontFamily: FontFamily.display,
-    fontSize: 11,
+    fontSize: 13,
     letterSpacing: 1.5,
   },
   statBand: {
@@ -250,11 +250,11 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontFamily: FontFamily.display,
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 1.5,
     color: palette.muted,
   },
-  statValue: { fontFamily: FontFamily.monoBold, fontSize: 15 },
+  statValue: { fontFamily: FontFamily.monoBold, fontSize: 17 },
   rankPanel: {
     backgroundColor: palette.panel,
     borderWidth: 1,
@@ -265,10 +265,10 @@ const styles = StyleSheet.create({
   },
   rankTitle: {
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 15,
+    fontSize: 17,
     color: palette.text,
   },
-  rankNext: { fontFamily: FontFamily.mono, fontSize: 9, color: palette.muted },
+  rankNext: { fontFamily: FontFamily.mono, fontSize: 11, color: palette.muted },
   rankTrack: {
     height: 6,
     backgroundColor: palette.bg,
@@ -293,11 +293,11 @@ const styles = StyleSheet.create({
   },
   ascentTitle: {
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 15,
+    fontSize: 17,
     letterSpacing: 1,
     color: palette.text,
   },
-  ascentCount: { fontFamily: FontFamily.mono, fontSize: 10.5, color: palette.gold },
+  ascentCount: { fontFamily: FontFamily.mono, fontSize: 13, color: palette.gold },
   campHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -307,9 +307,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   campDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
-  campName: { fontFamily: FontFamily.displaySemiBold, fontSize: 13, letterSpacing: 0.5 },
-  campAlt: { fontFamily: FontFamily.mono, fontSize: 9.5, color: palette.muted, letterSpacing: 0.5 },
-  campCount: { fontFamily: FontFamily.monoBold, fontSize: 12 },
+  campName: { fontFamily: FontFamily.displaySemiBold, fontSize: 15, letterSpacing: 0.5 },
+  campAlt: { fontFamily: FontFamily.mono, fontSize: 12, color: palette.muted, letterSpacing: 0.5 },
+  campCount: { fontFamily: FontFamily.monoBold, fontSize: 14 },
   badgeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -323,11 +323,11 @@ const styles = StyleSheet.create({
   },
   badgeTitle: {
     fontFamily: FontFamily.displayMedium,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 0.5,
-    lineHeight: 12,
+    lineHeight: 14,
     minHeight: 24,
     textAlign: 'center',
   },
-  badgeSub: { fontFamily: FontFamily.mono, fontSize: 8.5, letterSpacing: 0.5 },
+  badgeSub: { fontFamily: FontFamily.mono, fontSize: 11, letterSpacing: 0.5 },
 });

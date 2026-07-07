@@ -112,7 +112,7 @@ export function TodayTab({ data, badges, ascent, onOpenSummit }: Props) {
                 backgroundColor: done ? palette.green : 'transparent',
               },
             ]}>
-            <Text style={{ fontSize: 26, lineHeight: 30, color: done ? palette.bg : palette.faint }}>✓</Text>
+            <Text style={{ fontSize: 28, lineHeight: 35, color: done ? palette.bg : palette.faint }}>✓</Text>
           </Pressable>
           <Text style={[styles.doneLabel, { color: done ? palette.green : palette.muted }]}>
             {done ? 'COMPLETE' : 'MARK COMPLETE'}
@@ -162,21 +162,21 @@ const styles = StyleSheet.create({
   },
   dateLine: {
     fontFamily: FontFamily.mono,
-    fontSize: 11,
+    fontSize: 13,
     color: palette.muted,
     letterSpacing: 1,
   },
   workoutTitle: {
     fontFamily: FontFamily.displaySemiBold,
-    fontSize: 26,
+    fontSize: 28,
     letterSpacing: 1,
     marginTop: 6,
-    lineHeight: 29,
+    lineHeight: 34,
     color: palette.text,
   },
   pill: {
     fontFamily: FontFamily.display,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 1.5,
     borderWidth: 1,
     paddingVertical: 3,
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginHorizontal: 16,
     fontFamily: FontFamily.body,
-    fontSize: 12,
+    fontSize: 14,
     color: palette.gold,
     backgroundColor: goldTint,
     paddingVertical: 8,
@@ -203,18 +203,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'baseline',
     gap: 12,
-    paddingVertical: 9,
+    paddingVertical: 13,
     borderBottomWidth: 1,
     borderBottomColor: palette.line,
   },
   exerciseName: {
     fontFamily: FontFamily.bodyMedium,
-    fontSize: 14,
+    fontSize: 16,
     color: palette.text,
   },
   exerciseDetail: {
     fontFamily: FontFamily.mono,
-    fontSize: 12.5,
+    fontSize: 14,
     color: palette.textDim,
   },
   doneWrap: {
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   doneLabel: {
     fontFamily: FontFamily.display,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 2,
   },
   milestone: {
@@ -251,16 +251,16 @@ const styles = StyleSheet.create({
   },
   msKicker: {
     fontFamily: FontFamily.display,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 2,
     color: palette.gold,
   },
   msTitle: {
     fontFamily: FontFamily.displayMedium,
-    fontSize: 15,
+    fontSize: 17,
     letterSpacing: 0.5,
     marginTop: 2,
-    lineHeight: 17,
+    lineHeight: 20,
     color: palette.text,
   },
   msProgressRow: {
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   },
   msProgText: {
     fontFamily: FontFamily.mono,
-    fontSize: 10.5,
+    fontSize: 13,
     color: palette.textDim,
   },
 });
