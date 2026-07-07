@@ -80,6 +80,37 @@ create table if not exists program_days (
   unique (program_id, week, day)
 );
 
+create table if not exists user_profile (
+  id text primary key,
+  bodyweight_lb real not null default 260,
+  experience text not null default 'new',
+  equipment text not null default 'full_gym',
+  squat_max_lb real,
+  deadlift_max_lb real,
+  press_max_lb real,
+  row_max_lb real,
+  calibration text not null default '{}',
+  onboarding_complete integer not null default 0,
+  updated_at text not null,
+  deleted_at text
+);
+
+create table if not exists exercise_logs (
+  id text primary key,
+  log_date text not null,
+  exercise_id text not null,
+  exercise_name text not null,
+  week integer,
+  phase text,
+  rep_target integer not null,
+  set_target integer not null,
+  suggested_weight_lb real,
+  sets text not null default '[]',
+  updated_at text not null,
+  deleted_at text,
+  unique (log_date, exercise_id)
+);
+
 create table if not exists outbox (
   seq integer primary key autoincrement,
   table_name text not null,
@@ -141,6 +172,34 @@ export const TABLE_COLUMNS = {
     'title',
     'blocks',
     'updated_at',
+  ],
+  user_profile: [
+    'id',
+    'bodyweight_lb',
+    'experience',
+    'equipment',
+    'squat_max_lb',
+    'deadlift_max_lb',
+    'press_max_lb',
+    'row_max_lb',
+    'calibration',
+    'onboarding_complete',
+    'updated_at',
+    'deleted_at',
+  ],
+  exercise_logs: [
+    'id',
+    'log_date',
+    'exercise_id',
+    'exercise_name',
+    'week',
+    'phase',
+    'rep_target',
+    'set_target',
+    'suggested_weight_lb',
+    'sets',
+    'updated_at',
+    'deleted_at',
   ],
 } as const;
 

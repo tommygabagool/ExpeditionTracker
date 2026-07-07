@@ -5,6 +5,7 @@ import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import { FontFamily, palette } from '@/constants/theme';
 import { logWeight } from '@/data/repos';
 import type { AppData } from '@/data/store';
+import { suggestForExercise } from '@/program/estimator';
 import { weightChart } from '@/lib/geometry';
 import { GOAL_WEIGHT_LB, START_WEIGHT_LB } from '@/program/goals';
 import { getWorkout } from '@/program/program';
@@ -104,12 +105,24 @@ export function WeekTab({ data, week, onChangeWeek }: Props) {
               </Pressable>
               {expanded && (
                 <View style={styles.dayExercises}>
-                  {w.exercises.map((ex) => (
-                    <View key={ex.name} style={styles.exerciseRow}>
-                      <Text style={styles.exerciseName}>{ex.name}</Text>
-                      <Text style={styles.exerciseDetail}>{ex.detail}</Text>
-                    </View>
-                  ))}
+                  {w.exercises.map((ex) => {
+                    const sug = suggestForExercise(
+                      ex.name,
+                      ex.detail,
+                      data.profile?.maxes ?? null,
+                      week,
+                      data.lastAttempts,
+                    );
+                    return (
+                      <View key={ex.name} style={styles.exerciseRow}>
+                        <Text style={styles.exerciseName}>{ex.name}</Text>
+                        <View style={styles.detailGroup}>
+                          <Text style={styles.exerciseDetail}>{ex.detail}</Text>
+                          {sug && <Text style={styles.exerciseWeight}>{sug.label}</Text>}
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
             </View>
@@ -267,7 +280,9 @@ const styles = StyleSheet.create({
     borderBottomColor: palette.line,
   },
   exerciseName: { fontFamily: FontFamily.body, fontSize: 13, color: palette.text },
+  detailGroup: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   exerciseDetail: { fontFamily: FontFamily.mono, fontSize: 11.5, color: palette.textDim },
+  exerciseWeight: { fontFamily: FontFamily.monoBold, fontSize: 11.5, color: palette.gold },
   weightCard: {
     backgroundColor: palette.panel,
     borderWidth: 1,

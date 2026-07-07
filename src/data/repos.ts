@@ -2,6 +2,9 @@ import * as Crypto from 'expo-crypto';
 
 import { notifyDataChanged } from '@/data/store';
 import { db, upsertLocal, type SyncedTable } from '@/lib/db';
+import { anchorMaxes } from '@/program/estimator';
+import type { Anchor, Equipment, Experience } from '@/program/lifts';
+import { START_WEIGHT_LB } from '@/program/goals';
 import { enqueue } from '@/sync/engine';
 import type { Trail } from './trails';
 
@@ -114,4 +117,90 @@ export function logHike(trail: Trail, dateKey: string): void {
     deleted_at: null,
   });
   completeWorkout(dateKey, { hike: trail.id });
+}
+
+// -- Onboarding profile -----------------------------------------------------
+
+export interface ProfileInput {
+  bodyweightLb: number;
+  experience: Experience;
+  equipment: Equipment;
+  calibration: Partial<Record<Anchor, number>>;
+}
+
+function profileId(): string {
+  const row = db.getFirstSync<{ id: string }>('select id from user_profile limit 1');
+  return row?.id ?? Crypto.randomUUID();
+}
+
+export function saveProfile(input: ProfileInput, onboardingComplete = true): void {
+  const maxes = anchorMaxes({
+    bodyweightLb: input.bodyweightLb,
+    experience: input.experience,
+    calibration: input.calibration,
+  });
+  write('user_profile', {
+    id: profileId(),
+    bodyweight_lb: input.bodyweightLb,
+    experience: input.experience,
+    equipment: input.equipment,
+    squat_max_lb: maxes.squat,
+    deadlift_max_lb: maxes.deadlift,
+    press_max_lb: maxes.press,
+    row_max_lb: maxes.row,
+    calibration: input.calibration,
+    onboarding_complete: onboardingComplete,
+    updated_at: nowIso(),
+    deleted_at: null,
+  });
+}
+
+/** Seed a conservative default profile on first run so weights render before
+ *  onboarding. Marked incomplete so the onboarding flow still prompts. */
+export function ensureDefaultProfile(): void {
+  const existing = db.getFirstSync<{ id: string }>('select id from user_profile where deleted_at is null');
+  if (existing) return;
+  saveProfile(
+    { bodyweightLb: START_WEIGHT_LB, experience: 'new', equipment: 'full_gym', calibration: {} },
+    false,
+  );
+}
+
+// -- Per-set strength logging -----------------------------------------------
+
+export interface SetInput {
+  weight: number;
+  reps: number;
+  done?: boolean;
+}
+
+export function logExerciseSets(p: {
+  logDate: string;
+  exerciseId: string;
+  exerciseName: string;
+  week: number;
+  phase: string;
+  repTarget: number;
+  setTarget: number;
+  suggestedWeightLb: number | null;
+  sets: SetInput[];
+}): void {
+  const existing = db.getFirstSync<{ id: string }>(
+    'select id from exercise_logs where log_date = ? and exercise_id = ?',
+    [p.logDate, p.exerciseId],
+  );
+  write('exercise_logs', {
+    id: existing?.id ?? Crypto.randomUUID(),
+    log_date: p.logDate,
+    exercise_id: p.exerciseId,
+    exercise_name: p.exerciseName,
+    week: p.week,
+    phase: p.phase,
+    rep_target: p.repTarget,
+    set_target: p.setTarget,
+    suggested_weight_lb: p.suggestedWeightLb,
+    sets: p.sets,
+    updated_at: nowIso(),
+    deleted_at: null,
+  });
 }

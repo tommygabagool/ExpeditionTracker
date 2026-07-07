@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(\"cleaned\")"
+      "PowerShell(\"cleaned\")",
+      "WebSearch",
+      "WebFetch(domain:fitnesscalcs.com)",
+      "WebFetch(domain:exrx.net)"
     ]
   }
 }

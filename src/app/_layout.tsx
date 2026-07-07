@@ -22,6 +22,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { palette } from '@/constants/theme';
+import { ensureDefaultProfile } from '@/data/repos';
 import { initMapbox } from '@/lib/mapbox';
 import { startSyncEngine } from '@/sync/engine';
 
@@ -61,6 +62,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     initMapbox();
+    ensureDefaultProfile();
     return startSyncEngine();
   }, []);
 

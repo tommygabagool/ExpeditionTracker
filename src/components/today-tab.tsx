@@ -4,6 +4,7 @@ import { FontFamily, palette } from '@/constants/theme';
 import { completeWorkout, uncompleteWorkout } from '@/data/repos';
 import type { AppData } from '@/data/store';
 import { CAMP_DEFS, type BadgeComputed } from '@/program/badges';
+import { suggestForExercise } from '@/program/estimator';
 import { getWorkout } from '@/program/program';
 import {
   currentWeek,
@@ -63,12 +64,24 @@ export function TodayTab({ data, badges, onOpenSummit }: Props) {
         )}
 
         <View style={styles.exercises}>
-          {workout.exercises.map((ex) => (
-            <View key={ex.name} style={styles.exerciseRow}>
-              <Text style={styles.exerciseName}>{ex.name}</Text>
-              <Text style={styles.exerciseDetail}>{ex.detail}</Text>
-            </View>
-          ))}
+          {workout.exercises.map((ex) => {
+            const sug = suggestForExercise(
+              ex.name,
+              ex.detail,
+              data.profile?.maxes ?? null,
+              week,
+              data.lastAttempts,
+            );
+            return (
+              <View key={ex.name} style={styles.exerciseRow}>
+                <Text style={styles.exerciseName}>{ex.name}</Text>
+                <View style={styles.detailGroup}>
+                  <Text style={styles.exerciseDetail}>{ex.detail}</Text>
+                  {sug && <Text style={styles.exerciseWeight}>{sug.label}</Text>}
+                </View>
+              </View>
+            );
+          })}
         </View>
 
         <View style={styles.doneWrap}>
@@ -181,10 +194,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: palette.text,
   },
+  detailGroup: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+  },
   exerciseDetail: {
     fontFamily: FontFamily.mono,
     fontSize: 12.5,
     color: palette.textDim,
+  },
+  exerciseWeight: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 12.5,
+    color: palette.gold,
   },
   doneWrap: {
     alignItems: 'center',
