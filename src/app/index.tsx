@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CelebrationToast } from '@/components/celebration-toast';
 import { FuelTab } from '@/components/fuel-tab';
 import { Header } from '@/components/header';
+import { Login } from '@/components/login';
 import { Onboarding } from '@/components/onboarding';
 import { SummitTab } from '@/components/summit-tab';
 import { TabBar, type MainTab } from '@/components/tab-bar';
@@ -14,6 +15,7 @@ import { WeekTab } from '@/components/week-tab';
 import { palette } from '@/constants/theme';
 import { awardBadge } from '@/data/repos';
 import { useAppData } from '@/data/store';
+import { useSession } from '@/hooks/use-session';
 import { CAMP_DEFS, computeBadges } from '@/program/badges';
 import { GOAL_WEIGHT_LB, START_WEIGHT_LB } from '@/program/goals';
 import { currentWeek, keyOf, todayDate } from '@/program/schedule';
@@ -25,11 +27,13 @@ export default function AppScreen() {
   const data = useAppData();
   const badges = useMemo(() => computeBadges(data), [data]);
 
+  const session = useSession();
   const [screen, setScreen] = useState<Screen>('today');
   const [weekSel, setWeekSel] = useState<number>(currentWeek());
   const [summitBack, setSummitBack] = useState<MainTab>('today');
   const [celebrate, setCelebrate] = useState<string | null>(null);
   const [recalibrating, setRecalibrating] = useState(false);
+  const [trainOffline, setTrainOffline] = useState(false);
   const firstReconcile = useRef(true);
 
   // Award newly-earned badges and celebrate the newest — mirrors the design's
@@ -70,7 +74,14 @@ export default function AppScreen() {
 
   const celebBadge = celebrate ? badges.find((b) => b.id === celebrate) : null;
 
-  // First-run gate (profile seeds as incomplete) + manual re-run from the header.
+  // Gate order matters: session first (a second device pulls its profile down
+  // and skips onboarding), then onboarding, then the app.
+  if (session === 'loading') {
+    return <View style={styles.root} />;
+  }
+  if (session === 'signedOut' && !trainOffline) {
+    return <Login onSkip={() => setTrainOffline(true)} />;
+  }
   if (!data.profile?.onboardingComplete || recalibrating) {
     return <Onboarding profile={data.profile} onDone={() => setRecalibrating(false)} />;
   }

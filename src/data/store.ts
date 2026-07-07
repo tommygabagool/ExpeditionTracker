@@ -110,7 +110,11 @@ function readProfile(): Profile | null {
     row_max_lb: number | null;
     calibration: string;
     onboarding_complete: number;
-  }>('select * from user_profile where deleted_at is null limit 1');
+  }>(
+    // Prefer the synced/completed row — a lingering local epoch-seed row loses.
+    `select * from user_profile where deleted_at is null
+     order by onboarding_complete desc, updated_at desc limit 1`,
+  );
   if (!r) return null;
   const hasMaxes =
     r.squat_max_lb != null && r.deadlift_max_lb != null && r.press_max_lb != null && r.row_max_lb != null;

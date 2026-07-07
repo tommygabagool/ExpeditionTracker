@@ -134,7 +134,7 @@ async function pullAll(): Promise<void> {
   }
 }
 
-/** Wire connectivity/foreground triggers. Returns a cleanup function. */
+/** Wire connectivity/foreground/auth triggers. Returns a cleanup function. */
 export function startSyncEngine(): () => void {
   const unsubscribeNet = NetInfo.addEventListener((state) => {
     if (state.isConnected) {
@@ -146,9 +146,15 @@ export function startSyncEngine(): () => void {
       void syncNow();
     }
   });
+  const authSub = supabase?.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+      void syncNow();
+    }
+  });
   void syncNow();
   return () => {
     unsubscribeNet();
     appStateSub.remove();
+    authSub?.data.subscription.unsubscribe();
   };
 }

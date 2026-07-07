@@ -129,7 +129,11 @@ export interface ProfileInput {
 }
 
 function profileId(): string {
-  const row = db.getFirstSync<{ id: string }>('select id from user_profile limit 1');
+  // Prefer the synced/completed profile row so saves update it rather than
+  // racing the server's unique(user_id) with a second id.
+  const row = db.getFirstSync<{ id: string }>(
+    'select id from user_profile order by onboarding_complete desc, updated_at desc limit 1',
+  );
   return row?.id ?? Crypto.randomUUID();
 }
 
@@ -156,14 +160,28 @@ export function saveProfile(input: ProfileInput, onboardingComplete = true): voi
 }
 
 /** Seed a conservative default profile on first run so weights render before
- *  onboarding. Marked incomplete so the onboarding flow still prompts. */
+ *  onboarding. LOCAL-ONLY (never enqueued) with an epoch timestamp: a real
+ *  profile pulled from the server always wins LWW, and the seed can never
+ *  collide with the server's unique(user_id) from a second device. */
 export function ensureDefaultProfile(): void {
   const existing = db.getFirstSync<{ id: string }>('select id from user_profile where deleted_at is null');
   if (existing) return;
-  saveProfile(
-    { bodyweightLb: START_WEIGHT_LB, experience: 'new', equipment: 'full_gym', calibration: {} },
-    false,
-  );
+  const maxes = anchorMaxes({ bodyweightLb: START_WEIGHT_LB, experience: 'new', calibration: {} });
+  upsertLocal('user_profile', {
+    id: Crypto.randomUUID(),
+    bodyweight_lb: START_WEIGHT_LB,
+    experience: 'new',
+    equipment: 'full_gym',
+    squat_max_lb: maxes.squat,
+    deadlift_max_lb: maxes.deadlift,
+    press_max_lb: maxes.press,
+    row_max_lb: maxes.row,
+    calibration: {},
+    onboarding_complete: false,
+    updated_at: '1970-01-01T00:00:00.000Z',
+    deleted_at: null,
+  });
+  notifyDataChanged();
 }
 
 // -- Per-set strength logging -----------------------------------------------
