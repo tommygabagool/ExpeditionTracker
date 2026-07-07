@@ -13,9 +13,19 @@ interface Props {
   lostW: string;
   onOpenSummit: () => void;
   onPickWeek: (week: number) => void;
+  onOpenCalibration: () => void;
 }
 
-export function Header({ badgeCountLine, startW, currentW, goalW, lostW, onOpenSummit, onPickWeek }: Props) {
+export function Header({
+  badgeCountLine,
+  startW,
+  currentW,
+  goalW,
+  lostW,
+  onOpenSummit,
+  onPickWeek,
+  onOpenCalibration,
+}: Props) {
   const week = currentWeek();
   const phase = phaseOf(week);
   const pts = ridge();
@@ -35,6 +45,15 @@ export function Header({ badgeCountLine, startW, currentW, goalW, lostW, onOpenS
             26-WK EVEREST PREP · WK {String(week).padStart(2, '0')}/26 · {phase.name}
           </Text>
         </View>
+        <Pressable onPress={onOpenCalibration} style={styles.calibrateBtn}>
+          <Svg viewBox="0 0 24 24" width={20} height={20}>
+            <Path d="M2 12 L22 12" stroke={palette.muted} strokeWidth={1.6} strokeLinecap="round" />
+            <Path d="M5 9 L5 15" stroke={palette.muted} strokeWidth={1.6} strokeLinecap="round" />
+            <Path d="M8 7 L8 17" stroke={palette.muted} strokeWidth={1.6} strokeLinecap="round" />
+            <Path d="M16 7 L16 17" stroke={palette.muted} strokeWidth={1.6} strokeLinecap="round" />
+            <Path d="M19 9 L19 15" stroke={palette.muted} strokeWidth={1.6} strokeLinecap="round" />
+          </Svg>
+        </Pressable>
         <Pressable onPress={onOpenSummit} style={styles.summitBtn}>
           <Svg viewBox="0 0 24 24" width={20} height={20}>
             <Path
@@ -141,6 +160,15 @@ const styles = StyleSheet.create({
     color: palette.muted,
     letterSpacing: 1,
     marginTop: 4,
+  },
+  calibrateBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.panel,
+    borderWidth: 1,
+    borderColor: palette.border,
+    paddingHorizontal: 9,
+    minHeight: 40,
   },
   summitBtn: {
     flexDirection: 'row',

@@ -3,7 +3,9 @@ import {
   type Anchor,
   BW_RATIO,
   CALIBRATION_NEW_MODIFIER,
+  DELOAD_LOAD_FACTOR,
   epley1RM,
+  type Equipment,
   type Experience,
   incrementFor,
   LIFTS,
@@ -11,7 +13,6 @@ import {
   parseSetsReps,
   pctOfMax,
   roundLoad,
-  DELOAD_LOAD_FACTOR,
 } from './lifts';
 
 export type AnchorMaxes = Record<Anchor, number>;
@@ -43,12 +44,63 @@ export function anchorMaxes(p: ProfileSeed): AnchorMaxes {
   return out;
 }
 
+// ---- logged history ---------------------------------------------------------
+
+export interface LoggedSet {
+  set: number;
+  weight: number; // added-load lifts: the ADDED weight (0 = bodyweight)
+  reps: number;
+  done?: boolean;
+}
+
+export interface ExerciseLogEntry {
+  date: string; // yyyy-mm-dd
+  repTarget: number;
+  setTarget: number;
+  suggestedWeightLb: number | null;
+  sets: LoggedSet[];
+}
+
 /** The most recent logged attempt for an exercise, summarized for progression. */
 export interface LastAttempt {
-  workingWeight: number; // added-load lifts: the ADDED weight (0 = bodyweight)
+  workingWeight: number;
   hitAll: boolean; // every prescribed set reached its rep target
-  fractionReps: number; // total reps done / total prescribed (0..1)
+  fractionReps: number; // completed reps / prescribed reps (0..1)
 }
+
+/** Summarize one log entry; null when nothing in it was actually done. */
+export function attemptFrom(entry: ExerciseLogEntry): LastAttempt | null {
+  const done = entry.sets.filter((s) => s.done);
+  if (done.length === 0) return null;
+  const workingWeight = Math.max(...done.map((s) => s.weight));
+  const hitSets = done.filter((s) => s.reps >= entry.repTarget).length;
+  const prescribed = entry.repTarget * entry.setTarget;
+  const total = done.reduce((acc, s) => acc + s.reps, 0);
+  return {
+    workingWeight,
+    hitAll: hitSets >= entry.setTarget,
+    fractionReps: prescribed > 0 ? Math.min(1, total / prescribed) : 0,
+  };
+}
+
+/**
+ * Most recent real attempt strictly BEFORE `dateKey` — today's in-progress log
+ * must never feed today's own suggestion. `logs` arrays are date-descending.
+ */
+export function lastAttemptBefore(
+  logs: Record<string, ExerciseLogEntry[]>,
+  exerciseId: string,
+  dateKey: string,
+): LastAttempt | undefined {
+  for (const entry of logs[exerciseId] ?? []) {
+    if (entry.date >= dateKey) continue;
+    const attempt = attemptFrom(entry);
+    if (attempt) return attempt;
+  }
+  return undefined;
+}
+
+// ---- suggestion --------------------------------------------------------------
 
 export interface Suggestion {
   exerciseId: string;
@@ -62,7 +114,7 @@ export interface Suggestion {
 function progress(prev: LastAttempt, increment: number): number {
   if (prev.hitAll) return prev.workingWeight + increment;
   if (prev.fractionReps < 0.5) return prev.workingWeight * 0.9; // bad miss → small deload
-  return prev.workingWeight; // partial miss (incl. two in a row) → hold
+  return prev.workingWeight; // any lesser miss → hold
 }
 
 function labelFor(weight: number, load: LoadKind): string {
@@ -73,9 +125,9 @@ function labelFor(weight: number, load: LoadKind): string {
 
 /**
  * Suggested working weight for one program exercise, or null if it doesn't get
- * a suggestion (accessory / carry / core, or profile not yet seeded for a
- * needed anchor). `detail` is the builder's "4×5" string; `week` drives the
- * deload cut; `last` (if present) is real logged data and overrides the seed.
+ * one (accessory/carry/core, missing seed, or the movement doesn't match the
+ * available equipment). `last`, when present, is real logged data and
+ * overrides the seed.
  */
 export function suggestFor(
   name: string,
@@ -83,9 +135,14 @@ export function suggestFor(
   maxes: AnchorMaxes | null,
   week: number,
   last?: LastAttempt,
+  equipment: Equipment = 'full_gym',
 ): Suggestion | null {
   const meta = LIFTS[name];
   if (!meta) return null;
+  if (meta.load === 'barbell' && equipment !== 'full_gym') return null;
+  if ((meta.load === 'db_pair' || meta.load === 'db_single') && equipment === 'home_minimal') {
+    return null;
+  }
   const sr = parseSetsReps(detail);
   if (!sr) return null;
 
@@ -112,15 +169,22 @@ export function suggestFor(
   };
 }
 
-/** UI convenience: resolve the exercise's last attempt from a map, then suggest. */
+export interface ProfileForSuggest {
+  maxes: AnchorMaxes | null;
+  equipment: Equipment;
+}
+
+/** UI entry point: resolve history for the viewed date, then suggest. */
 export function suggestForExercise(
   name: string,
   detail: string,
-  maxes: AnchorMaxes | null,
+  profile: ProfileForSuggest | null,
   week: number,
-  lastAttempts: Record<string, LastAttempt>,
+  logs: Record<string, ExerciseLogEntry[]>,
+  dateKey: string,
 ): Suggestion | null {
   const meta = LIFTS[name];
-  const last = meta ? lastAttempts[meta.id] : undefined;
-  return suggestFor(name, detail, maxes, week, last);
+  if (!meta) return null;
+  const last = lastAttemptBefore(logs, meta.id, dateKey);
+  return suggestFor(name, detail, profile?.maxes ?? null, week, last, profile?.equipment ?? 'full_gym');
 }

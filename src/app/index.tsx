@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CelebrationToast } from '@/components/celebration-toast';
 import { FuelTab } from '@/components/fuel-tab';
 import { Header } from '@/components/header';
+import { Onboarding } from '@/components/onboarding';
 import { SummitTab } from '@/components/summit-tab';
 import { TabBar, type MainTab } from '@/components/tab-bar';
 import { TodayTab } from '@/components/today-tab';
@@ -28,6 +29,7 @@ export default function AppScreen() {
   const [weekSel, setWeekSel] = useState<number>(currentWeek());
   const [summitBack, setSummitBack] = useState<MainTab>('today');
   const [celebrate, setCelebrate] = useState<string | null>(null);
+  const [recalibrating, setRecalibrating] = useState(false);
   const firstReconcile = useRef(true);
 
   // Award newly-earned badges and celebrate the newest — mirrors the design's
@@ -68,6 +70,11 @@ export default function AppScreen() {
 
   const celebBadge = celebrate ? badges.find((b) => b.id === celebrate) : null;
 
+  // First-run gate (profile seeds as incomplete) + manual re-run from the header.
+  if (!data.profile?.onboardingComplete || recalibrating) {
+    return <Onboarding profile={data.profile} onDone={() => setRecalibrating(false)} />;
+  }
+
   return (
     <View style={styles.root}>
       <ScrollView
@@ -83,6 +90,7 @@ export default function AppScreen() {
           lostW={(lost > 0 ? '-' : '') + Math.abs(lost).toFixed(1)}
           onOpenSummit={openSummit}
           onPickWeek={pickWeek}
+          onOpenCalibration={() => setRecalibrating(true)}
         />
 
         {screen === 'today' && <TodayTab data={data} badges={badges} onOpenSummit={openSummit} />}

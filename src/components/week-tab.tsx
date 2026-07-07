@@ -109,9 +109,10 @@ export function WeekTab({ data, week, onChangeWeek }: Props) {
                     const sug = suggestForExercise(
                       ex.name,
                       ex.detail,
-                      data.profile?.maxes ?? null,
+                      data.profile,
                       week,
-                      data.lastAttempts,
+                      data.exerciseLogs,
+                      key,
                     );
                     return (
                       <View key={ex.name} style={styles.exerciseRow}>

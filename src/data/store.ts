@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 import { db } from '@/lib/db';
-import type { AnchorMaxes, LastAttempt } from '@/program/estimator';
+import type { AnchorMaxes, ExerciseLogEntry, LoggedSet } from '@/program/estimator';
 import { START_WEIGHT_LB } from '@/program/goals';
 import type { Equipment, Experience } from '@/program/lifts';
 import { PROGRAM_START } from '@/program/schedule';
@@ -30,7 +30,7 @@ export interface AppData {
   hikes: Record<string, string>; // dateKey -> trail id
   badges: Record<string, string>; // badge id -> earned dateKey
   profile: Profile | null;
-  lastAttempts: Record<string, LastAttempt>; // exercise_id -> most recent logged attempt
+  exerciseLogs: Record<string, ExerciseLogEntry[]>; // exercise_id -> logs, date desc
 }
 
 let version = 0;
@@ -95,7 +95,7 @@ function readAll(): AppData {
     hikes,
     badges,
     profile: readProfile(),
-    lastAttempts: readLastAttempts(),
+    exerciseLogs: readExerciseLogs(),
   };
 }
 
@@ -131,39 +131,33 @@ function readProfile(): Profile | null {
   };
 }
 
-interface LoggedSet {
-  weight: number;
-  reps: number;
-}
-
-// Most recent logged attempt per exercise — the seed for self-correction.
-function readLastAttempts(): Record<string, LastAttempt> {
+// Per-exercise log history, newest first. suggestForExercise picks the last
+// attempt strictly before the viewed date; the Today logger hydrates from the
+// entry matching today.
+function readExerciseLogs(): Record<string, ExerciseLogEntry[]> {
   const rows = db.getAllSync<{
     exercise_id: string;
+    log_date: string;
     rep_target: number;
     set_target: number;
+    suggested_weight_lb: number | null;
     sets: string;
-    log_date: string;
   }>(
-    `select exercise_id, rep_target, set_target, sets, log_date
+    `select exercise_id, log_date, rep_target, set_target, suggested_weight_lb, sets
      from exercise_logs
      where deleted_at is null
-     order by log_date desc`,
+     order by log_date desc
+     limit 600`,
   );
-  const out: Record<string, LastAttempt> = {};
+  const out: Record<string, ExerciseLogEntry[]> = {};
   for (const r of rows) {
-    if (out[r.exercise_id]) continue; // rows are date-desc, so first seen is most recent
-    const sets = safeJson<LoggedSet[]>(r.sets, []);
-    if (sets.length === 0) continue;
-    const workingWeight = Math.max(...sets.map((s) => s.weight));
-    const hitSets = sets.filter((s) => s.reps >= r.rep_target).length;
-    const totalPrescribed = r.rep_target * r.set_target;
-    const totalDone = sets.reduce((acc, s) => acc + s.reps, 0);
-    out[r.exercise_id] = {
-      workingWeight,
-      hitAll: hitSets >= r.set_target,
-      fractionReps: totalPrescribed > 0 ? Math.min(1, totalDone / totalPrescribed) : 0,
-    };
+    (out[r.exercise_id] ??= []).push({
+      date: r.log_date,
+      repTarget: r.rep_target,
+      setTarget: r.set_target,
+      suggestedWeightLb: r.suggested_weight_lb,
+      sets: safeJson<LoggedSet[]>(r.sets, []),
+    });
   }
   return out;
 }

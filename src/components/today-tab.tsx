@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ExerciseLogger } from '@/components/exercise-logger';
 import { FontFamily, palette } from '@/constants/theme';
 import { completeWorkout, uncompleteWorkout } from '@/data/repos';
 import type { AppData } from '@/data/store';
@@ -68,17 +69,29 @@ export function TodayTab({ data, badges, onOpenSummit }: Props) {
             const sug = suggestForExercise(
               ex.name,
               ex.detail,
-              data.profile?.maxes ?? null,
+              data.profile,
               week,
-              data.lastAttempts,
+              data.exerciseLogs,
+              todayKey,
             );
+            if (sug) {
+              return (
+                <ExerciseLogger
+                  key={ex.name}
+                  name={ex.name}
+                  detail={ex.detail}
+                  suggestion={sug}
+                  logs={data.exerciseLogs[sug.exerciseId] ?? []}
+                  dateKey={todayKey}
+                  week={week}
+                  phase={phase.name}
+                />
+              );
+            }
             return (
               <View key={ex.name} style={styles.exerciseRow}>
                 <Text style={styles.exerciseName}>{ex.name}</Text>
-                <View style={styles.detailGroup}>
-                  <Text style={styles.exerciseDetail}>{ex.detail}</Text>
-                  {sug && <Text style={styles.exerciseWeight}>{sug.label}</Text>}
-                </View>
+                <Text style={styles.exerciseDetail}>{ex.detail}</Text>
               </View>
             );
           })}
@@ -194,20 +207,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: palette.text,
   },
-  detailGroup: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-  },
   exerciseDetail: {
     fontFamily: FontFamily.mono,
     fontSize: 12.5,
     color: palette.textDim,
-  },
-  exerciseWeight: {
-    fontFamily: FontFamily.monoBold,
-    fontSize: 12.5,
-    color: palette.gold,
   },
   doneWrap: {
     alignItems: 'center',
