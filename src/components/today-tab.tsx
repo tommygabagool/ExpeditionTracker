@@ -1,13 +1,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Altimeter } from '@/components/altimeter';
-import { ExerciseLogger } from '@/components/exercise-logger';
 import { FontFamily, goldTint, palette } from '@/constants/theme';
 import { completeWorkout, uncompleteWorkout } from '@/data/repos';
 import type { AppData } from '@/data/store';
 import type { Ascent } from '@/program/ascent';
 import { CAMP_DEFS, type BadgeComputed } from '@/program/badges';
 import { suggestForExercise } from '@/program/estimator';
+import { slugFor } from '@/program/exercise-library';
 import { getWorkout } from '@/program/program';
 import {
   currentWeek,
@@ -26,9 +26,10 @@ interface Props {
   badges: BadgeComputed[];
   ascent: Ascent;
   onOpenSummit: () => void;
+  onStartSession: () => void;
 }
 
-export function TodayTab({ data, badges, ascent, onOpenSummit }: Props) {
+export function TodayTab({ data, badges, ascent, onOpenSummit, onStartSession }: Props) {
   const today = todayDate();
   const todayKey = keyOf(today);
   const dow = today.getDay();
@@ -69,6 +70,7 @@ export function TodayTab({ data, badges, ascent, onOpenSummit }: Props) {
           </Text>
         )}
 
+        {/* Read-only preview — logging lives in Session Mode. */}
         <View style={styles.exercises}>
           {workout.exercises.map((ex) => {
             const sug = suggestForExercise(
@@ -79,28 +81,36 @@ export function TodayTab({ data, badges, ascent, onOpenSummit }: Props) {
               data.exerciseLogs,
               todayKey,
             );
-            if (sug) {
-              return (
-                <ExerciseLogger
-                  key={ex.name}
-                  name={ex.name}
-                  detail={ex.detail}
-                  suggestion={sug}
-                  logs={data.exerciseLogs[sug.exerciseId] ?? []}
-                  dateKey={todayKey}
-                  week={week}
-                  phase={phase.name}
-                />
-              );
-            }
+            const exId = sug?.exerciseId ?? slugFor(ex.name);
+            const todayLog = data.exerciseLogs[exId]?.find((e) => e.date === todayKey);
+            const doneSets = todayLog?.sets.filter((s) => s.done).length ?? 0;
+            const setTarget = todayLog?.setTarget ?? 0;
             return (
               <View key={ex.name} style={styles.exerciseRow}>
-                <Text style={styles.exerciseName}>{ex.name}</Text>
-                <Text style={styles.exerciseDetail}>{ex.detail}</Text>
+                <Text style={styles.exerciseName} numberOfLines={1}>
+                  {ex.name}
+                </Text>
+                <View style={styles.exerciseRight}>
+                  <Text style={styles.exerciseDetail}>{ex.detail}</Text>
+                  {sug && <Text style={styles.exerciseWeight}>{sug.label}</Text>}
+                  {doneSets > 0 && (
+                    <Text
+                      style={[
+                        styles.exerciseProg,
+                        { color: setTarget > 0 && doneSets >= setTarget ? palette.green : palette.muted },
+                      ]}>
+                      {doneSets}/{setTarget || doneSets}✓
+                    </Text>
+                  )}
+                </View>
               </View>
             );
           })}
         </View>
+
+        <Pressable onPress={onStartSession} style={styles.startBtn}>
+          <Text style={styles.startText}>{done ? 'REVIEW SESSION ▶' : 'START SESSION ▶'}</Text>
+        </Pressable>
 
         <View style={styles.doneWrap}>
           <Pressable
@@ -211,11 +221,40 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.bodyMedium,
     fontSize: 16,
     color: palette.text,
+    flexShrink: 1,
+  },
+  exerciseRight: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
   },
   exerciseDetail: {
     fontFamily: FontFamily.mono,
     fontSize: 14,
     color: palette.textDim,
+  },
+  exerciseWeight: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 14,
+    color: palette.gold,
+  },
+  exerciseProg: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 13,
+  },
+  startBtn: {
+    height: 54,
+    backgroundColor: palette.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  startText: {
+    fontFamily: FontFamily.display,
+    fontSize: 15,
+    letterSpacing: 2,
+    color: palette.bg,
   },
   doneWrap: {
     alignItems: 'center',

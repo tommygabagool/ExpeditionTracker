@@ -7,6 +7,7 @@ import { FuelTab } from '@/components/fuel-tab';
 import { Header } from '@/components/header';
 import { Login } from '@/components/login';
 import { Onboarding } from '@/components/onboarding';
+import { SessionMode } from '@/components/session-mode';
 import { SnowBurst } from '@/components/snow-burst';
 import { SummitTab } from '@/components/summit-tab';
 import { TabBar, type MainTab } from '@/components/tab-bar';
@@ -37,6 +38,7 @@ export default function AppScreen() {
   const [celebrate, setCelebrate] = useState<string | null>(null);
   const [recalibrating, setRecalibrating] = useState(false);
   const [trainOffline, setTrainOffline] = useState(false);
+  const [inSession, setInSession] = useState(false);
   const firstReconcile = useRef(true);
 
   // Award newly-earned badges and celebrate the newest — mirrors the design's
@@ -88,6 +90,9 @@ export default function AppScreen() {
   if (!data.profile?.onboardingComplete || recalibrating) {
     return <Onboarding profile={data.profile} onDone={() => setRecalibrating(false)} />;
   }
+  if (inSession) {
+    return <SessionMode data={data} ascent={ascent} onExit={() => setInSession(false)} />;
+  }
 
   return (
     <View style={styles.root}>
@@ -111,7 +116,13 @@ export default function AppScreen() {
         />
 
         {screen === 'today' && (
-          <TodayTab data={data} badges={badges} ascent={ascent} onOpenSummit={openSummit} />
+          <TodayTab
+            data={data}
+            badges={badges}
+            ascent={ascent}
+            onOpenSummit={openSummit}
+            onStartSession={() => setInSession(true)}
+          />
         )}
         {screen === 'week' && <WeekTab data={data} week={weekSel} onChangeWeek={setWeekSel} />}
         {screen === 'fuel' && <FuelTab data={data} />}
