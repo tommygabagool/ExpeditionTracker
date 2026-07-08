@@ -119,7 +119,6 @@ export function SessionMode({ data, ascent, onExit }: Props) {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [idx, setIdx] = useState(0);
   const [onSummary, setOnSummary] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
   const [rest, setRest] = useState<{ endsAt: number; total: number } | null>(null);
   const [now, setNow] = useState(Date.now());
   const [railH, setRailH] = useState(480);
@@ -185,7 +184,6 @@ export function SessionMode({ data, ascent, onExit }: Props) {
   const goTo = (i: number) => {
     setIdx(Math.max(0, Math.min(pitches.length - 1, i)));
     setOnSummary(false);
-    setNotesOpen(false);
   };
 
   // ---- summary stats ---------------------------------------------------------
@@ -336,6 +334,7 @@ export function SessionMode({ data, ascent, onExit }: Props) {
               <Text style={[styles.kicker, { color: phase.color }]}>{kicker}</Text>
               <Text style={styles.slab}>{p.name.toUpperCase()}</Text>
               {p.info && <Text style={styles.muscles}>{p.info.muscles}</Text>}
+              {p.info && <Text style={styles.descText}>{p.info.description}</Text>}
               {deload && p.target && <Text style={styles.deloadNote}>DELOAD — 2 SETS · KEEP IT LIGHT</Text>}
 
               {p.suggestion && (
@@ -369,6 +368,12 @@ export function SessionMode({ data, ascent, onExit }: Props) {
                 <View style={styles.figurePanel}>
                   <ExerciseFigure name={p.info.figure} />
                   <Text style={styles.figCaption}>FIG · {p.name.toUpperCase()}</Text>
+                  <View style={styles.legendRow}>
+                    <View style={styles.legendSwatch} />
+                    <Text style={styles.legendText}>WORKING MUSCLES</Text>
+                    <View style={styles.legendDash} />
+                    <Text style={styles.legendText}>LOAD PATH</Text>
+                  </View>
                 </View>
               )}
 
@@ -445,43 +450,50 @@ export function SessionMode({ data, ascent, onExit }: Props) {
 
               {p.info && (
                 <View style={styles.notes}>
-                  <Pressable onPress={() => setNotesOpen(!notesOpen)} style={styles.notesToggle} hitSlop={6}>
-                    <Text style={styles.notesToggleText}>FIELD NOTES {notesOpen ? '▾' : '▸'}</Text>
-                  </Pressable>
-                  {notesOpen && (
-                    <View style={{ gap: 14 }}>
-                      <Text style={styles.why}>{p.info.why}</Text>
-                      <View>
-                        <Text style={styles.noteHead}>HOW TO</Text>
-                        {p.info.how.map((h, i) => (
-                          <Text key={i} style={styles.noteLine}>
-                            <Text style={styles.noteNum}>{i + 1}. </Text>
-                            {h}
-                          </Text>
-                        ))}
+                  <View>
+                    <Text style={styles.noteHead}>WHY WE DO IT</Text>
+                    <Text style={styles.why}>{p.info.why}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.noteHead}>FORM</Text>
+                    {p.info.how.map((h, i) => (
+                      <Text key={i} style={styles.noteLine}>
+                        <Text style={styles.noteNum}>{i + 1}. </Text>
+                        {h}
+                      </Text>
+                    ))}
+                  </View>
+                  <View>
+                    <Text style={styles.noteHead}>WATCH FOR</Text>
+                    {p.info.faults.map((f) => (
+                      <Text key={f} style={styles.noteLine}>
+                        <Text style={{ color: palette.orange }}>✕ </Text>
+                        {f}
+                      </Text>
+                    ))}
+                  </View>
+                  {p.info.safety && p.info.safety.length > 0 && (
+                    <View style={styles.safetyBox}>
+                      <Text style={[styles.noteHead, { color: palette.gold }]}>SAFETY</Text>
+                      {p.info.safety.map((s) => (
+                        <Text key={s} style={styles.noteLine}>
+                          <Text style={{ color: palette.gold, fontFamily: FontFamily.monoBold }}>! </Text>
+                          {s}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                  {progression.length >= 2 && (
+                    <View>
+                      <Text style={styles.noteHead}>PROGRESSION · {progressionByWeight ? 'LB' : 'REPS'}</Text>
+                      <View style={styles.sparkRow}>
+                        <SparkLine values={progression} />
+                        <Text style={styles.sparkText}>
+                          {progression[0]} → {progression[progression.length - 1]}
+                          {' · '}
+                          {progression.length} SESSIONS
+                        </Text>
                       </View>
-                      <View>
-                        <Text style={styles.noteHead}>WATCH FOR</Text>
-                        {p.info.faults.map((f) => (
-                          <Text key={f} style={styles.noteLine}>
-                            <Text style={{ color: palette.orange }}>✕ </Text>
-                            {f}
-                          </Text>
-                        ))}
-                      </View>
-                      {progression.length >= 2 && (
-                        <View>
-                          <Text style={styles.noteHead}>PROGRESSION · {progressionByWeight ? 'LB' : 'REPS'}</Text>
-                          <View style={styles.sparkRow}>
-                            <SparkLine values={progression} />
-                            <Text style={styles.sparkText}>
-                              {progression[0]} → {progression[progression.length - 1]}
-                              {' · '}
-                              {progression.length} SESSIONS
-                            </Text>
-                          </View>
-                        </View>
-                      )}
                     </View>
                   )}
                 </View>
@@ -587,6 +599,13 @@ const styles = StyleSheet.create({
     color: palette.muted,
     marginTop: 6,
   },
+  descText: {
+    fontFamily: FontFamily.body,
+    fontSize: 15,
+    lineHeight: 22,
+    color: palette.textDim,
+    marginTop: 8,
+  },
   deloadNote: {
     fontFamily: FontFamily.monoBold,
     fontSize: 12,
@@ -658,6 +677,32 @@ const styles = StyleSheet.create({
     color: palette.faint,
     marginTop: 4,
   },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  legendSwatch: {
+    width: 14,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: palette.orange,
+    opacity: 0.45,
+  },
+  legendDash: {
+    width: 16,
+    borderTopWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: palette.muted,
+    marginLeft: 8,
+  },
+  legendText: {
+    fontFamily: FontFamily.mono,
+    fontSize: 11,
+    color: palette.muted,
+    letterSpacing: 0.5,
+  },
   cues: { marginTop: 12, gap: 5 },
   cueLine: {
     fontFamily: FontFamily.bodyMedium,
@@ -726,14 +771,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderTopWidth: 1,
     borderTopColor: palette.line,
-    paddingTop: 4,
+    paddingTop: 16,
+    gap: 16,
   },
-  notesToggle: { paddingVertical: 10 },
-  notesToggleText: {
-    fontFamily: FontFamily.display,
-    fontSize: 12,
-    letterSpacing: 2,
-    color: palette.muted,
+  safetyBox: {
+    backgroundColor: goldTint,
+    padding: 10,
   },
   why: {
     fontFamily: FontFamily.body,

@@ -420,3 +420,30 @@ export const FIGURES = {
 } satisfies Record<string, FigureDef>;
 
 export type FigureName = keyof typeof FIGURES;
+
+// Skeleton segments highlighted as the working muscles (drawn as a wide
+// sunset underlay beneath the ink limbs). Joint pairs, near side only.
+export const EMPHASIS: Record<FigureName, [Joint, Joint][]> = {
+  back_squat: [['hip', 'knee'], ['neck', 'hip']],
+  front_squat: [['hip', 'knee'], ['neck', 'hip']],
+  deadlift: [['neck', 'hip'], ['hip', 'knee']],
+  romanian_deadlift: [['neck', 'hip'], ['hip', 'knee']],
+  overhead_press: [['neck', 'elbow'], ['elbow', 'wrist']],
+  barbell_row: [['neck', 'hip'], ['neck', 'elbow']],
+  incline_bench: [['neck', 'elbow'], ['elbow', 'wrist']],
+  db_row: [['neck', 'hip'], ['neck', 'elbow']],
+  pull_up: [['neck', 'elbow'], ['elbow', 'wrist']],
+  dip: [['neck', 'elbow'], ['elbow', 'wrist']],
+  step_up: [['hip', 'knee'], ['knee', 'ankle']],
+  calf_raise: [['knee', 'ankle']],
+  knee_raise: [['neck', 'hip'], ['hip', 'knee']],
+  face_pull: [['neck', 'elbow']],
+  farmer_carry: [['neck', 'hip'], ['elbow', 'wrist']],
+  lunge: [['hip', 'knee'], ['knee', 'ankle']],
+  step_down: [['hip', 'knee'], ['knee', 'ankle']],
+  plank: [['neck', 'hip']],
+  pallof: [['neck', 'hip']],
+  sit_up: [['neck', 'hip']],
+  hiker: [['hip', 'knee'], ['knee', 'ankle']],
+  stretch: [['hip', 'knee']],
+};
