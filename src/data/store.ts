@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import type { AnchorMaxes, ExerciseLogEntry, LoggedSet } from '@/program/estimator';
 import { START_WEIGHT_LB } from '@/program/goals';
 import type { Equipment, Experience } from '@/program/lifts';
+import type { Activity, Sex } from '@/program/nutrition';
 import { PROGRAM_START } from '@/program/schedule';
 
 // UI-facing snapshot of the local database, in the shapes the design's logic
@@ -20,6 +21,12 @@ export interface Profile {
   equipment: Equipment;
   maxes: AnchorMaxes | null; // null until onboarding computes them
   calibration: Partial<Record<'squat' | 'deadlift' | 'press' | 'row', number>>;
+  // Fuel stats — null until entered in onboarding; Fuel tab falls back to
+  // the design defaults while any are missing.
+  heightIn: number | null;
+  ageYears: number | null;
+  sex: Sex | null;
+  activity: Activity | null;
   onboardingComplete: boolean;
 }
 
@@ -109,6 +116,10 @@ function readProfile(): Profile | null {
     press_max_lb: number | null;
     row_max_lb: number | null;
     calibration: string;
+    height_in: number | null;
+    age_years: number | null;
+    sex: string | null;
+    activity: string | null;
     onboarding_complete: number;
   }>(
     // Prefer the synced/completed row — a lingering local epoch-seed row loses.
@@ -131,6 +142,10 @@ function readProfile(): Profile | null {
         }
       : null,
     calibration: safeJson(r.calibration, {}),
+    heightIn: r.height_in,
+    ageYears: r.age_years,
+    sex: (r.sex as Sex | null) ?? null,
+    activity: (r.activity as Activity | null) ?? null,
     onboardingComplete: r.onboarding_complete === 1,
   };
 }

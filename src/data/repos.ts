@@ -4,6 +4,7 @@ import { notifyDataChanged } from '@/data/store';
 import { db, upsertLocal, type SyncedTable } from '@/lib/db';
 import { anchorMaxes } from '@/program/estimator';
 import type { Anchor, Equipment, Experience } from '@/program/lifts';
+import type { Activity, Sex } from '@/program/nutrition';
 import { START_WEIGHT_LB } from '@/program/goals';
 import { enqueue } from '@/sync/engine';
 import type { Trail } from './trails';
@@ -126,6 +127,11 @@ export interface ProfileInput {
   experience: Experience;
   equipment: Equipment;
   calibration: Partial<Record<Anchor, number>>;
+  // Fuel stats; null = not provided (Fuel tab uses the design defaults).
+  heightIn: number | null;
+  ageYears: number | null;
+  sex: Sex | null;
+  activity: Activity | null;
 }
 
 function profileId(): string {
@@ -153,6 +159,10 @@ export function saveProfile(input: ProfileInput, onboardingComplete = true): voi
     press_max_lb: maxes.press,
     row_max_lb: maxes.row,
     calibration: input.calibration,
+    height_in: input.heightIn,
+    age_years: input.ageYears,
+    sex: input.sex,
+    activity: input.activity,
     onboarding_complete: onboardingComplete,
     updated_at: nowIso(),
     deleted_at: null,
@@ -177,6 +187,10 @@ export function ensureDefaultProfile(): void {
     press_max_lb: maxes.press,
     row_max_lb: maxes.row,
     calibration: {},
+    height_in: null,
+    age_years: null,
+    sex: null,
+    activity: null,
     onboarding_complete: false,
     updated_at: '1970-01-01T00:00:00.000Z',
     deleted_at: null,

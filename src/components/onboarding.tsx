@@ -9,6 +9,7 @@ import type { Profile } from '@/data/store';
 import { anchorMaxes } from '@/program/estimator';
 import { START_WEIGHT_LB } from '@/program/goals';
 import type { Anchor, Equipment, Experience } from '@/program/lifts';
+import { fuelPlan, type Activity, type Sex } from '@/program/nutrition';
 
 const EXPERIENCE_OPTS: { value: Experience; label: string; sub: string }[] = [
   { value: 'new', label: 'NEW', sub: 'First time under a bar' },
@@ -29,6 +30,18 @@ const ANCHOR_ROWS: { anchor: Anchor; label: string }[] = [
   { anchor: 'row', label: 'Barbell Row' },
 ];
 
+const SEX_OPTS: { value: Sex; label: string; sub: string }[] = [
+  { value: 'male', label: 'MALE', sub: 'For the BMR formula' },
+  { value: 'female', label: 'FEMALE', sub: 'For the BMR formula' },
+];
+
+// Factors already include the program's six sessions; this asks about the rest.
+const ACTIVITY_OPTS: { value: Activity; label: string; sub: string }[] = [
+  { value: 'desk', label: 'DESK', sub: 'Training + mostly seated' },
+  { value: 'active', label: 'ON FEET', sub: 'Training + standing/walking job' },
+  { value: 'hard', label: 'PHYSICAL', sub: 'Training + manual labor' },
+];
+
 export function Onboarding({ profile, onDone }: { profile: Profile | null; onDone: () => void }) {
   const insets = useSafeAreaInsets();
   const [bw, setBw] = useState(String(profile?.bodyweightLb ?? START_WEIGHT_LB));
@@ -40,6 +53,15 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
     press: profile?.calibration.press ? String(profile.calibration.press) : '',
     row: profile?.calibration.row ? String(profile.calibration.row) : '',
   });
+  const [heightFt, setHeightFt] = useState(
+    profile?.heightIn ? String(Math.floor(profile.heightIn / 12)) : '',
+  );
+  const [heightIn, setHeightIn] = useState(
+    profile?.heightIn ? String(Math.round(profile.heightIn % 12)) : '',
+  );
+  const [age, setAge] = useState(profile?.ageYears ? String(profile.ageYears) : '');
+  const [sex, setSex] = useState<Sex | null>(profile?.sex ?? null);
+  const [activity, setActivity] = useState<Activity | null>(profile?.activity ?? null);
 
   const bwNum = parseFloat(bw) || START_WEIGHT_LB;
   const calibration: Partial<Record<Anchor, number>> = {};
@@ -49,8 +71,22 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
   }
   const maxes = anchorMaxes({ bodyweightLb: bwNum, experience, calibration });
 
+  const totalHeightIn = (parseInt(heightFt, 10) || 0) * 12 + (parseInt(heightIn, 10) || 0);
+  const ageNum = parseInt(age, 10) || 0;
+  const statsComplete = totalHeightIn >= 48 && ageNum >= 14 && !!sex && !!activity;
+  const preview = statsComplete
+    ? fuelPlan({ weightLb: bwNum, heightIn: totalHeightIn, ageYears: ageNum, sex: sex!, activity: activity! })
+    : null;
+
+  const fuelFields = {
+    heightIn: statsComplete ? totalHeightIn : null,
+    ageYears: statsComplete ? ageNum : null,
+    sex: statsComplete ? sex : null,
+    activity: statsComplete ? activity : null,
+  };
+
   const lockIn = () => {
-    saveProfile({ bodyweightLb: bwNum, experience, equipment, calibration });
+    saveProfile({ bodyweightLb: bwNum, experience, equipment, calibration, ...fuelFields });
     onDone();
   };
   const skip = () => {
@@ -59,6 +95,10 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
       experience: profile?.experience ?? 'new',
       equipment: profile?.equipment ?? 'full_gym',
       calibration: profile?.calibration ?? {},
+      heightIn: profile?.heightIn ?? null,
+      ageYears: profile?.ageYears ?? null,
+      sex: profile?.sex ?? null,
+      activity: profile?.activity ?? null,
     });
     onDone();
   };
@@ -132,6 +172,73 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
               />
             ))}
           </View>
+        </View>
+
+        <View style={styles.panel}>
+          <Text style={styles.panelTitle}>FUEL STATS · OPTIONAL</Text>
+          <Text style={styles.calHint}>
+            Sets your maintenance calories (Mifflin-St Jeor) and a daily target paced to reach the
+            goal weight by the end of the program. Leave blank to keep the default targets.
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }}>
+            <TextInput
+              value={heightFt}
+              onChangeText={setHeightFt}
+              keyboardType="number-pad"
+              placeholder="6"
+              placeholderTextColor={palette.faint}
+              style={styles.statInput}
+            />
+            <Text style={styles.unit}>FT</Text>
+            <TextInput
+              value={heightIn}
+              onChangeText={setHeightIn}
+              keyboardType="number-pad"
+              placeholder="2"
+              placeholderTextColor={palette.faint}
+              style={styles.statInput}
+            />
+            <Text style={styles.unit}>IN</Text>
+            <View style={{ width: 10 }} />
+            <TextInput
+              value={age}
+              onChangeText={setAge}
+              keyboardType="number-pad"
+              placeholder="—"
+              placeholderTextColor={palette.faint}
+              style={styles.statInput}
+            />
+            <Text style={styles.unit}>YRS</Text>
+          </View>
+          <View style={{ gap: 8, marginTop: 12 }}>
+            {SEX_OPTS.map((o) => (
+              <OptionRow
+                key={o.value}
+                label={o.label}
+                sub={o.sub}
+                active={sex === o.value}
+                onPress={() => setSex(o.value)}
+              />
+            ))}
+          </View>
+          <View style={{ gap: 8, marginTop: 12 }}>
+            {ACTIVITY_OPTS.map((o) => (
+              <OptionRow
+                key={o.value}
+                label={o.label}
+                sub={o.sub}
+                active={activity === o.value}
+                onPress={() => setActivity(o.value)}
+              />
+            ))}
+          </View>
+          {preview && (
+            <Text style={styles.fuelPreview}>
+              → MAINTENANCE {preview.maintenance.toLocaleString('en-US')} · TARGET{' '}
+              {preview.target.toLocaleString('en-US')} KCAL
+              {preview.maintain ? ' · AT GOAL' : ` · −${preview.lbPerWeek.toFixed(1)} LB/WK`}
+            </Text>
+          )}
         </View>
 
         <View style={styles.panel}>
@@ -291,6 +398,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   calSeed: { fontFamily: FontFamily.mono, fontSize: 13, color: palette.gold, flex: 1 },
+  statInput: {
+    width: 64,
+    backgroundColor: palette.bg,
+    borderWidth: 1,
+    borderColor: palette.line,
+    color: palette.text,
+    fontFamily: FontFamily.mono,
+    fontSize: 16,
+    paddingVertical: 8,
+    minHeight: 44,
+    textAlign: 'center',
+  },
+  fuelPreview: {
+    fontFamily: FontFamily.monoBold,
+    fontSize: 13,
+    color: palette.gold,
+    marginTop: 14,
+  },
   primaryBtn: {
     backgroundColor: palette.orange,
     minHeight: 48,

@@ -90,6 +90,10 @@ create table if not exists user_profile (
   press_max_lb real,
   row_max_lb real,
   calibration text not null default '{}',
+  height_in real,
+  age_years integer,
+  sex text,
+  activity text,
   onboarding_complete integer not null default 0,
   updated_at text not null,
   deleted_at text
@@ -124,6 +128,22 @@ create table if not exists sync_state (
   last_pulled_at text not null
 );
 `);
+
+// 0003: fuel stats — additive columns for databases created before them.
+{
+  const existing = db
+    .getAllSync<{ name: string }>('pragma table_info(user_profile)')
+    .map((r) => r.name);
+  const added: [string, string][] = [
+    ['height_in', 'height_in real'],
+    ['age_years', 'age_years integer'],
+    ['sex', 'sex text'],
+    ['activity', 'activity text'],
+  ];
+  for (const [col, ddl] of added) {
+    if (!existing.includes(col)) db.execSync(`alter table user_profile add column ${ddl}`);
+  }
+}
 
 export const TABLE_COLUMNS = {
   workout_completions: [
@@ -183,6 +203,10 @@ export const TABLE_COLUMNS = {
     'press_max_lb',
     'row_max_lb',
     'calibration',
+    'height_in',
+    'age_years',
+    'sex',
+    'activity',
     'onboarding_complete',
     'updated_at',
     'deleted_at',

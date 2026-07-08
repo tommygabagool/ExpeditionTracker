@@ -4,14 +4,9 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FontFamily, palette } from '@/constants/theme';
 import { setDailyCalories } from '@/data/repos';
 import type { AppData } from '@/data/store';
-import { CALORIE_TARGET, MAINTENANCE_CALORIES } from '@/program/goals';
+import { GOAL_WEIGHT_LB } from '@/program/goals';
+import { fuelPlan, type FuelStats } from '@/program/nutrition';
 import { DAY_NAMES, fmtShort, keyOf, todayDate } from '@/program/schedule';
-
-const MACROS = [
-  { grams: '230g', label: 'PROTEIN', kcal: '920 kcal', color: palette.orange },
-  { grams: '200g', label: 'CARBS', kcal: '800 kcal', color: palette.blue },
-  { grams: '70g', label: 'FAT', kcal: '630 kcal', color: palette.gold },
-];
 
 const FOOD_GUIDE = [
   {
@@ -49,6 +44,23 @@ export function FuelTab({ data }: { data: AppData }) {
   const today = todayDate();
   const todayKey = keyOf(today);
 
+  // Targets from onboarding stats + the latest logged weight; the design's
+  // frozen defaults remain the fallback until fuel stats exist.
+  const p = data.profile;
+  const currentLb = data.weights.length
+    ? data.weights[data.weights.length - 1].lb
+    : (p?.bodyweightLb ?? GOAL_WEIGHT_LB);
+  const stats: FuelStats | null =
+    p && p.heightIn && p.ageYears && p.sex && p.activity
+      ? { weightLb: currentLb, heightIn: p.heightIn, ageYears: p.ageYears, sex: p.sex, activity: p.activity }
+      : null;
+  const plan = fuelPlan(stats);
+  const macros = [
+    { grams: `${plan.proteinG}g`, label: 'PROTEIN', kcal: `${plan.proteinG * 4} kcal`, color: palette.orange },
+    { grams: `${plan.carbsG}g`, label: 'CARBS', kcal: `${plan.carbsG * 4} kcal`, color: palette.blue },
+    { grams: `${plan.fatG}g`, label: 'FAT', kcal: `${plan.fatG * 9} kcal`, color: palette.gold },
+  ];
+
   const calRows: { key: string; date: string; kcal: string; delta: string; deltaColor: string }[] = [];
   let sum = 0;
   let n = 0;
@@ -61,7 +73,7 @@ export function FuelTab({ data }: { data: AppData }) {
       sum += v;
       n++;
     }
-    const delta = v != null ? v - CALORIE_TARGET : null;
+    const delta = v != null ? v - plan.target : null;
     calRows.push({
       key,
       date: (i === 0 ? 'TODAY' : DAY_NAMES[d.getDay()]) + ' ' + fmtShort(d),
@@ -81,30 +93,39 @@ export function FuelTab({ data }: { data: AppData }) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.panel, styles.targetsRow]}>
-        <View style={styles.targetCell}>
-          <Text style={[styles.targetLabel, { color: palette.muted }]}>MAINTENANCE</Text>
-          <Text style={[styles.targetValue, { color: palette.textDim }]}>
-            {MAINTENANCE_CALORIES.toLocaleString('en-US')}
-          </Text>
+      <View style={styles.panel}>
+        <View style={styles.targetsRow}>
+          <View style={styles.targetCell}>
+            <Text style={[styles.targetLabel, { color: palette.muted }]}>MAINTENANCE</Text>
+            <Text style={[styles.targetValue, { color: palette.textDim }]}>
+              {plan.maintenance.toLocaleString('en-US')}
+            </Text>
+          </View>
+          <Text style={{ color: palette.orange, fontSize: 20 }}>→</Text>
+          <View style={styles.targetCell}>
+            <Text style={[styles.targetLabel, { color: palette.orange }]}>DAILY TARGET</Text>
+            <Text style={[styles.targetValue, styles.targetBold, { color: palette.orange }]}>
+              {plan.target.toLocaleString('en-US')}
+            </Text>
+          </View>
+          <View style={styles.targetCell}>
+            <Text style={[styles.targetLabel, { color: palette.muted }]}>DEFICIT</Text>
+            <Text style={[styles.targetValue, { color: palette.green }]}>
+              {plan.maintain ? '—' : `-${plan.deficit.toLocaleString('en-US')}`}
+            </Text>
+          </View>
         </View>
-        <Text style={{ color: palette.orange, fontSize: 20 }}>→</Text>
-        <View style={styles.targetCell}>
-          <Text style={[styles.targetLabel, { color: palette.orange }]}>DAILY TARGET</Text>
-          <Text style={[styles.targetValue, styles.targetBold, { color: palette.orange }]}>
-            {CALORIE_TARGET.toLocaleString('en-US')}
-          </Text>
-        </View>
-        <View style={styles.targetCell}>
-          <Text style={[styles.targetLabel, { color: palette.muted }]}>DEFICIT</Text>
-          <Text style={[styles.targetValue, { color: palette.green }]}>
-            -{(MAINTENANCE_CALORIES - CALORIE_TARGET).toLocaleString('en-US')}
-          </Text>
-        </View>
+        <Text style={styles.planLine}>
+          {plan.source === 'default'
+            ? 'DEFAULT TARGETS — ADD FUEL STATS IN CALIBRATION (BARBELL ICON)'
+            : plan.maintain
+              ? `AT GOAL — HOLDING ${currentLb.toFixed(0)} LB AT MAINTENANCE`
+              : `${currentLb.toFixed(1)} LB → ${GOAL_WEIGHT_LB} BY WK 26 · −${plan.lbPerWeek.toFixed(1)} LB/WK`}
+        </Text>
       </View>
 
       <View style={styles.macroRow}>
-        {MACROS.map((m) => (
+        {macros.map((m) => (
           <View key={m.label} style={[styles.macroCard, { borderTopColor: m.color }]}>
             <Text style={styles.macroGrams}>{m.grams}</Text>
             <Text style={[styles.macroLabel, { color: m.color }]}>{m.label}</Text>
@@ -133,7 +154,7 @@ export function FuelTab({ data }: { data: AppData }) {
           <Text
             style={[
               styles.avgValue,
-              { color: avg == null ? palette.faint : avg <= CALORIE_TARGET ? palette.green : palette.orange },
+              { color: avg == null ? palette.faint : avg <= plan.target ? palette.green : palette.orange },
             ]}>
             {avg != null ? avg.toLocaleString('en-US') + ' kcal' : '—'}
           </Text>
@@ -164,7 +185,8 @@ export function FuelTab({ data }: { data: AppData }) {
       </View>
 
       <View style={styles.panel}>
-        <Text style={styles.panelTitle}>SAMPLE DAY · {CALORIE_TARGET.toLocaleString('en-US')}</Text>
+        {/* The meal list is fixed content that sums to 2,350 — keep it honest. */}
+        <Text style={styles.panelTitle}>SAMPLE DAY · 2,350</Text>
         <View style={{ marginTop: 6 }}>
           {SAMPLE_MEALS.map((m) => (
             <View key={m.slot} style={styles.mealRow}>
@@ -205,6 +227,17 @@ const styles = StyleSheet.create({
   targetLabel: { fontFamily: FontFamily.display, fontSize: 12, letterSpacing: 1.5 },
   targetValue: { fontFamily: FontFamily.mono, fontSize: 24, marginTop: 4 },
   targetBold: { fontFamily: FontFamily.monoBold },
+  planLine: {
+    fontFamily: FontFamily.mono,
+    fontSize: 11,
+    letterSpacing: 0.3,
+    color: palette.muted,
+    textAlign: 'center',
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: palette.line,
+  },
   macroRow: { flexDirection: 'row', gap: 8 },
   macroCard: {
     flex: 1,
