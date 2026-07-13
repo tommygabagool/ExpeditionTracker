@@ -8,7 +8,9 @@
       "PowerShell(npx expo install @expo-google-fonts/alfa-slab-one @expo-google-fonts/source-sans-3 @expo-google-fonts/space-mono)",
       "PowerShell(node \"C:\\\\Users\\\\tommi\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Dev-ExpeditionTracker\\\\dec39071-cdd9-47b8-adb7-067051f3efab\\\\scratchpad\\\\scale-type.js\")",
       "PowerShell(npm i -D sharp)",
-      "PowerShell(node scripts\\\\make-icons.js)"
+      "PowerShell(node scripts\\\\make-icons.js)",
+      "WebFetch(domain:docs.expo.dev)",
+      "PowerShell(npx tsc --noEmit; if \\($?\\) { npx expo export --platform ios --output-dir \"$env:LOCALAPPDATA\\\\Temp\\\\claude\\\\c--Dev-ExpeditionTracker\\\\f176786e-8aa7-4b72-a01f-7b8f08ba31ae\\\\scratchpad\\\\export-test\" 2>&1 | Select-Object -Last 3 })"
     ]
   }
 }

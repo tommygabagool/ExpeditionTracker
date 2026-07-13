@@ -10,6 +10,7 @@ import { SwitchbackRail } from '@/components/switchback-rail';
 import { FontFamily, goldTint, palette } from '@/constants/theme';
 import { completeWorkout, logExerciseSets } from '@/data/repos';
 import type { AppData } from '@/data/store';
+import { cancelRestDone, ensureRestNotifications, scheduleRestDone } from '@/lib/rest-notify';
 import { keepAwakeOff, keepAwakeOn, successFx, tapFx } from '@/lib/session-fx';
 import type { Ascent } from '@/program/ascent';
 import { suggestForExercise, type ExerciseLogEntry, type Suggestion } from '@/program/estimator';
@@ -124,12 +125,29 @@ export function SessionMode({ data, ascent, onExit }: Props) {
   const [railH, setRailH] = useState(480);
   const startAt = useRef(Date.now());
 
+  // Lock-screen "rest over" notification. The token guards the async schedule
+  // against a skip/extend racing it; a fired id cancels as a harmless no-op.
+  const restNotif = useRef<{ token: number; id: string | null }>({ token: 0, id: null });
+  const setRestNotification = (seconds: number | null) => {
+    cancelRestDone(restNotif.current.id);
+    restNotif.current = { token: restNotif.current.token + 1, id: null };
+    if (seconds == null) return;
+    const token = restNotif.current.token;
+    scheduleRestDone(seconds).then((id) => {
+      if (restNotif.current.token === token) restNotif.current.id = id;
+      else cancelRestDone(id);
+    });
+  };
+
   useEffect(() => {
     keepAwakeOn();
+    ensureRestNotifications();
     const t = setInterval(() => setNow(Date.now()), 500);
+    const notif = restNotif.current;
     return () => {
       keepAwakeOff();
       clearInterval(t);
+      cancelRestDone(notif.id);
     };
   }, []);
 
@@ -174,6 +192,7 @@ export function SessionMode({ data, ascent, onExit }: Props) {
     if (turningOn) {
       tapFx();
       setRest({ endsAt: Date.now() + p.restSec * 1000, total: p.restSec });
+      setRestNotification(p.restSec);
     }
   };
 
@@ -509,8 +528,15 @@ export function SessionMode({ data, ascent, onExit }: Props) {
           <RestTimer
             remainingSec={restRemaining}
             totalSec={rest.total}
-            onExtend={() => setRest({ endsAt: rest.endsAt + 30000, total: rest.total + 30 })}
-            onSkip={() => setRest(null)}
+            onExtend={() => {
+              const endsAt = rest.endsAt + 30000;
+              setRest({ endsAt, total: rest.total + 30 });
+              setRestNotification((endsAt - Date.now()) / 1000);
+            }}
+            onSkip={() => {
+              setRest(null);
+              setRestNotification(null);
+            }}
           />
         )}
         {!onSummary && (
