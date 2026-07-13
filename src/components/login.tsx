@@ -3,27 +3,32 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Logo } from '@/components/logo';
-import { FontFamily, palette } from '@/constants/theme';
-import { signIn } from '@/lib/supabase';
+import { FontFamily, goldTint, palette } from '@/constants/theme';
+import { sendMagicLink, signIn, verifyEmailCode } from '@/lib/supabase';
 
-// Session gate. Shown only when Supabase is configured but signed out; a
-// successful sign-in flips the auth listener in useSession, so no callback is
-// needed. Skippable — being off-grid must never block training.
+// Session gate. Magic link is the primary path (a new email auto-creates the
+// account); the emailed link deep-links back via expedition://auth-callback,
+// and the 6-digit code is the no-deep-link fallback. A successful sign-in
+// flips the auth listener in useSession, so no callback is needed.
+// Skippable — being off-grid must never block training.
+
+type Mode = 'magic' | 'sent' | 'password';
+
 export function Login({ onSkip }: { onSkip: () => void }) {
   const insets = useSafeAreaInsets();
+  const [mode, setMode] = useState<Mode>('magic');
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submit = async () => {
-    if (busy || !email.trim() || !password) {
-      return;
-    }
+  const run = async (fn: () => Promise<void>) => {
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      await signIn(email.trim(), password);
+      await fn();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -31,10 +36,30 @@ export function Login({ onSkip }: { onSkip: () => void }) {
     }
   };
 
+  const sendLink = () => {
+    if (!email.trim()) return;
+    run(async () => {
+      await sendMagicLink(email.trim());
+      setCode('');
+      setMode('sent');
+    });
+  };
+
+  const verifyCode = () => {
+    if (!code.trim()) return;
+    run(() => verifyEmailCode(email.trim(), code.trim()));
+  };
+
+  const passwordSignIn = () => {
+    if (!email.trim() || !password) return;
+    run(() => signIn(email.trim(), password));
+  };
+
   return (
     <View style={styles.root}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         contentContainerStyle={{
           paddingTop: insets.top + 48,
           paddingBottom: insets.bottom + 32,
@@ -44,39 +69,106 @@ export function Login({ onSkip }: { onSkip: () => void }) {
         <View>
           <Logo size={64} />
           <Text style={[styles.kicker, { marginTop: 14 }]}>SWITCHBACK</Text>
-          <Text style={styles.title}>SIGN IN</Text>
+          <Text style={styles.title}>{mode === 'sent' ? 'CHECK YOUR EMAIL' : 'SIGN IN'}</Text>
           <Text style={styles.subtitle}>
-            One account syncs the log across devices. Everything still records on-device when
-            you're off-grid.
+            {mode === 'sent'
+              ? `Sign-in link sent to ${email.trim()}. Open it on this phone — or enter the 6-digit code from the email below.`
+              : 'One account syncs the log across devices — new emails are signed up automatically. Everything still records on-device when you’re off-grid.'}
           </Text>
         </View>
 
-        <View style={styles.panel}>
-          <Text style={styles.fieldLabel}>EMAIL</Text>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="username"
-            style={styles.input}
-          />
-          <Text style={[styles.fieldLabel, { marginTop: 14 }]}>PASSWORD</Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            textContentType="password"
-            onSubmitEditing={submit}
-            style={styles.input}
-          />
-          {error && <Text style={styles.error}>{error}</Text>}
-        </View>
+        {mode === 'magic' && (
+          <>
+            <View style={styles.panel}>
+              <Text style={styles.fieldLabel}>EMAIL</Text>
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                textContentType="emailAddress"
+                onSubmitEditing={sendLink}
+                style={styles.input}
+              />
+              {error && <Text style={styles.error}>{error}</Text>}
+            </View>
+            <Pressable onPress={sendLink} style={[styles.primaryBtn, busy && { opacity: 0.6 }]}>
+              <Text style={styles.primaryBtnText}>{busy ? 'SENDING…' : 'EMAIL ME A SIGN-IN LINK'}</Text>
+            </Pressable>
+            <Pressable onPress={() => { setError(null); setMode('password'); }} style={styles.ghostBtn}>
+              <Text style={styles.ghostBtnText}>USE A PASSWORD INSTEAD</Text>
+            </Pressable>
+          </>
+        )}
 
-        <Pressable onPress={submit} style={[styles.primaryBtn, busy && { opacity: 0.6 }]}>
-          <Text style={styles.primaryBtnText}>{busy ? 'SIGNING IN…' : 'SIGN IN'}</Text>
-        </Pressable>
+        {mode === 'sent' && (
+          <>
+            <View style={styles.panel}>
+              <Text style={styles.fieldLabel}>6-DIGIT CODE · OPTIONAL</Text>
+              <TextInput
+                value={code}
+                onChangeText={setCode}
+                keyboardType="number-pad"
+                textContentType="oneTimeCode"
+                onSubmitEditing={verifyCode}
+                placeholder="000000"
+                placeholderTextColor={palette.faint}
+                style={[styles.input, styles.codeInput]}
+              />
+              {error && <Text style={styles.error}>{error}</Text>}
+            </View>
+            <View style={styles.hint}>
+              <Text style={styles.hintText}>
+                Tapping the link signs you in automatically. The code works too, and doesn’t care
+                which device the email opens on.
+              </Text>
+            </View>
+            <Pressable onPress={verifyCode} style={[styles.primaryBtn, busy && { opacity: 0.6 }]}>
+              <Text style={styles.primaryBtnText}>{busy ? 'VERIFYING…' : 'VERIFY CODE'}</Text>
+            </Pressable>
+            <Pressable onPress={sendLink} style={styles.ghostBtn}>
+              <Text style={styles.ghostBtnText}>RESEND LINK</Text>
+            </Pressable>
+            <Pressable onPress={() => { setError(null); setMode('magic'); }} style={styles.ghostBtn}>
+              <Text style={styles.ghostBtnText}>DIFFERENT EMAIL</Text>
+            </Pressable>
+          </>
+        )}
+
+        {mode === 'password' && (
+          <>
+            <View style={styles.panel}>
+              <Text style={styles.fieldLabel}>EMAIL</Text>
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                textContentType="username"
+                style={styles.input}
+              />
+              <Text style={[styles.fieldLabel, { marginTop: 14 }]}>PASSWORD</Text>
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                textContentType="password"
+                onSubmitEditing={passwordSignIn}
+                style={styles.input}
+              />
+              {error && <Text style={styles.error}>{error}</Text>}
+            </View>
+            <Pressable onPress={passwordSignIn} style={[styles.primaryBtn, busy && { opacity: 0.6 }]}>
+              <Text style={styles.primaryBtnText}>{busy ? 'SIGNING IN…' : 'SIGN IN'}</Text>
+            </Pressable>
+            <Pressable onPress={() => { setError(null); setMode('magic'); }} style={styles.ghostBtn}>
+              <Text style={styles.ghostBtnText}>USE A MAGIC LINK INSTEAD</Text>
+            </Pressable>
+          </>
+        )}
+
         <Pressable onPress={onSkip} style={styles.ghostBtn}>
           <Text style={styles.ghostBtnText}>TRAIN OFFLINE — SYNC LATER</Text>
         </Pressable>
@@ -130,6 +222,23 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 12,
     minHeight: 44,
+  },
+  codeInput: {
+    fontSize: 24,
+    letterSpacing: 6,
+    textAlign: 'center',
+  },
+  hint: {
+    backgroundColor: goldTint,
+    borderLeftWidth: 3,
+    borderLeftColor: palette.gold,
+    padding: 12,
+  },
+  hintText: {
+    fontFamily: FontFamily.body,
+    fontSize: 14,
+    color: palette.gold,
+    lineHeight: 21,
   },
   error: {
     marginTop: 12,

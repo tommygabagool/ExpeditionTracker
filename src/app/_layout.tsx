@@ -6,6 +6,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/source-sans-3';
 import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/space-mono';
+import * as Linking from 'expo-linking';
 import { DefaultTheme, ThemeProvider } from 'expo-router';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -15,6 +16,7 @@ import { useEffect } from 'react';
 import { palette } from '@/constants/theme';
 import { ensureDefaultProfile } from '@/data/repos';
 import { initMapbox } from '@/lib/mapbox';
+import { handleAuthUrl } from '@/lib/supabase';
 import { startSyncEngine } from '@/sync/engine';
 
 SplashScreen.preventAutoHideAsync();
@@ -52,6 +54,15 @@ export default function RootLayout() {
     ensureDefaultProfile();
     return startSyncEngine();
   }, []);
+
+  // Magic-link sign-in lands here as expedition://auth-callback?code=…;
+  // handleAuthUrl ignores every other URL. useURL covers cold start + warm.
+  const incomingUrl = Linking.useURL();
+  useEffect(() => {
+    if (incomingUrl) {
+      handleAuthUrl(incomingUrl);
+    }
+  }, [incomingUrl]);
 
   if (!fontsLoaded) {
     return null;
