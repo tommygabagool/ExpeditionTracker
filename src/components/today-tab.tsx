@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Altimeter } from '@/components/altimeter';
 import { FontFamily, goldTint, palette } from '@/constants/theme';
 import { completeWorkout, uncompleteWorkout } from '@/data/repos';
 import type { AppData } from '@/data/store';
+import { getRecovery, type Recovery } from '@/lib/health';
 import type { Ascent } from '@/program/ascent';
 import { CAMP_DEFS, type BadgeComputed } from '@/program/badges';
 import { suggestForExercise } from '@/program/estimator';
@@ -46,9 +48,29 @@ export function TodayTab({ data, badges, ascent, onOpenSummit, onStartSession }:
   const iconColor = ratio > 0 ? palette.gold : palette.lock;
   const progText = next.goal > 1 ? `${next.cur} / ${next.goal}` : CAMP_DEFS[next.camp].name;
 
+  // Recovery signals from Apple Health — silently absent unless connected.
+  const [recovery, setRecovery] = useState<Recovery | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getRecovery().then((r) => {
+      if (alive) setRecovery(r);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [todayKey]);
+
   return (
     <View style={styles.container}>
       <Altimeter ascent={ascent} />
+
+      {recovery && (
+        <Text style={styles.recoveryLine}>
+          RECOVERY
+          {recovery.restingHr !== null ? ` · RHR ${recovery.restingHr} BPM` : ''}
+          {recovery.sleepHours !== null ? ` · SLEEP ${recovery.sleepHours.toFixed(1)} H` : ''}
+        </Text>
+      )}
 
       <View style={[styles.card, { borderTopColor: phase.color, borderTopWidth: 3, marginTop: 14 }]}>
         <View style={styles.cardHead}>
@@ -157,6 +179,14 @@ export function TodayTab({ data, badges, ascent, onOpenSummit, onStartSession }:
 
 const styles = StyleSheet.create({
   container: { padding: 16 },
+  recoveryLine: {
+    fontFamily: FontFamily.mono,
+    fontSize: 11,
+    letterSpacing: 1,
+    color: palette.muted,
+    marginTop: 10,
+    textAlign: 'center',
+  },
   card: {
     backgroundColor: palette.panel,
     borderWidth: 1,

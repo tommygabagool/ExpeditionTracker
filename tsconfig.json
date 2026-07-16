@@ -17,5 +17,10 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
+  ],
+  // Edge functions are Deno code — typechecked by Supabase tooling, not tsc.
+  "exclude": [
+    "node_modules",
+    "supabase/functions"
   ]
 }

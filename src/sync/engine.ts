@@ -18,6 +18,7 @@ const PUSHED_TABLES: SyncedTable[] = [
   'hike_logs',
   'user_profile',
   'exercise_logs',
+  'my_foods',
 ];
 const PULLED_TABLES: SyncedTable[] = [...PUSHED_TABLES, 'programs', 'program_days'];
 

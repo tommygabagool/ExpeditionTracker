@@ -15,7 +15,9 @@ import { useEffect } from 'react';
 
 import { palette } from '@/constants/theme';
 import { ensureDefaultProfile } from '@/data/repos';
+import { importHealthWeight } from '@/lib/health';
 import { initMapbox } from '@/lib/mapbox';
+import { syncSaturdayRuckNotification } from '@/lib/ruck-notify';
 import { handleAuthUrl } from '@/lib/supabase';
 import { startSyncEngine } from '@/sync/engine';
 
@@ -52,6 +54,10 @@ export default function RootLayout() {
   useEffect(() => {
     initMapbox();
     ensureDefaultProfile();
+    // Refresh the Saturday-ruck alert with the latest trailhead forecast.
+    syncSaturdayRuckNotification();
+    // No-ops unless Health authorization was already granted (see health.ts).
+    importHealthWeight();
     return startSyncEngine();
   }, []);
 

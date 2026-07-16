@@ -84,6 +84,106 @@ export function setDailyCalories(dateKey: string, calories: number): void {
   });
 }
 
+// -- Personal food library (my_foods) ----------------------------------------
+// Frequent items live locally so food logging works offline and the USDA /
+// Open Food Facts lookups (src/lib/food-api.ts) stay rare.
+
+export interface MyFood {
+  id: string;
+  label: string;
+  brand: string | null;
+  servingDesc: string | null;
+  kcal: number;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+  source: 'usda' | 'off' | 'manual';
+  sourceId: string | null;
+  barcode: string | null;
+  useCount: number;
+}
+
+interface MyFoodRow {
+  id: string;
+  label: string;
+  brand: string | null;
+  serving_desc: string | null;
+  kcal: number;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  source: string;
+  source_id: string | null;
+  barcode: string | null;
+  use_count: number;
+}
+
+const foodFromRow = (r: MyFoodRow): MyFood => ({
+  id: r.id,
+  label: r.label,
+  brand: r.brand,
+  servingDesc: r.serving_desc,
+  kcal: r.kcal,
+  proteinG: r.protein_g,
+  carbsG: r.carbs_g,
+  fatG: r.fat_g,
+  source: (r.source as MyFood['source']) ?? 'manual',
+  sourceId: r.source_id,
+  barcode: r.barcode,
+  useCount: r.use_count,
+});
+
+const MY_FOOD_COLS =
+  'id, label, brand, serving_desc, kcal, protein_g, carbs_g, fat_g, source, source_id, barcode, use_count';
+
+/** Library matches for a query — most-used first; empty query = top foods. */
+export function searchMyFoods(q: string, limit = 6): MyFood[] {
+  const rows = q.trim()
+    ? db.getAllSync<MyFoodRow>(
+        `select ${MY_FOOD_COLS} from my_foods
+         where deleted_at is null and (label like ? or brand like ?)
+         order by use_count desc, updated_at desc limit ?`,
+        [`%${q.trim()}%`, `%${q.trim()}%`, limit],
+      )
+    : db.getAllSync<MyFoodRow>(
+        `select ${MY_FOOD_COLS} from my_foods
+         where deleted_at is null order by use_count desc, updated_at desc limit ?`,
+        [limit],
+      );
+  return rows.map(foodFromRow);
+}
+
+/** Upsert a food into the library (dedupe by source id, then label) and count
+ *  the use. Values may differ from the source's — edits are the point (Open
+ *  Food Facts is crowd-sourced). */
+export function saveMyFoodUse(food: Omit<MyFood, 'id' | 'useCount'>): void {
+  const existing = food.sourceId
+    ? db.getFirstSync<{ id: string; use_count: number }>(
+        'select id, use_count from my_foods where source = ? and source_id = ? and deleted_at is null',
+        [food.source, food.sourceId],
+      )
+    : db.getFirstSync<{ id: string; use_count: number }>(
+        'select id, use_count from my_foods where label = ? and deleted_at is null',
+        [food.label],
+      );
+  write('my_foods', {
+    id: existing?.id ?? Crypto.randomUUID(),
+    label: food.label,
+    brand: food.brand,
+    serving_desc: food.servingDesc,
+    kcal: food.kcal,
+    protein_g: food.proteinG,
+    carbs_g: food.carbsG,
+    fat_g: food.fatG,
+    source: food.source,
+    source_id: food.sourceId,
+    barcode: food.barcode,
+    use_count: (existing?.use_count ?? 0) + 1,
+    updated_at: nowIso(),
+    deleted_at: null,
+  });
+}
+
 /** Earn dates are permanent; earnedOnKey preserves back-dated earns (e.g. lb_5). */
 export function awardBadge(badgeKey: string, earnedOnKey?: string): void {
   const existing = db.getFirstSync<{ id: string }>(

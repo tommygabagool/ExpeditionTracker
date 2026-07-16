@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { FoodLookup } from '@/components/food-lookup';
 import { FontFamily, palette } from '@/constants/theme';
 import { setDailyCalories } from '@/data/repos';
 import type { AppData } from '@/data/store';
@@ -171,6 +172,8 @@ export function FuelTab({ data }: { data: AppData }) {
           ))}
         </View>
       </View>
+
+      <FoodLookup todayKey={todayKey} currentTotal={data.calories[todayKey] ?? null} />
 
       <View style={styles.panel}>
         <Text style={styles.panelTitle}>FOOD GUIDE</Text>

@@ -41,7 +41,23 @@
         }
       ],
       "expo-sqlite",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Switchback uses the camera to scan food barcodes for the fuel log.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Switchback reads bodyweight, resting heart rate and sleep to drive fuel targets and recovery signals.",
+          "NSHealthUpdateUsageDescription": "Switchback saves finished strength sessions and rucks to Apple Health.",
+          "background": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

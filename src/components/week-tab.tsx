@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 
 import { FontFamily, palette } from '@/constants/theme';
 import { logWeight } from '@/data/repos';
 import type { AppData } from '@/data/store';
+import {
+  healthAuthState,
+  importHealthWeight,
+  requestHealthAuth,
+  type HealthAuthState,
+} from '@/lib/health';
 import { suggestForExercise } from '@/program/estimator';
 import { weightChart } from '@/lib/geometry';
 import { GOAL_WEIGHT_LB, START_WEIGHT_LB } from '@/program/goals';
@@ -57,6 +63,24 @@ export function WeekTab({ data, week, onChangeWeek }: Props) {
     if (!v || v < 80 || v > 500) return;
     logWeight(keyOf(todayDate()), Math.round(v * 10) / 10);
     setWtInput('');
+  };
+
+  // Apple Health: check state only here; the permission sheet fires from the
+  // button below and NEVER alongside a read (HealthKit crashes otherwise).
+  const [healthState, setHealthState] = useState<HealthAuthState>('unavailable');
+  useEffect(() => {
+    let alive = true;
+    healthAuthState().then((s) => {
+      if (alive) setHealthState(s);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const connectHealth = async () => {
+    const s = await requestHealthAuth();
+    setHealthState(s);
+    if (s === 'granted') await importHealthWeight();
   };
 
   return (
@@ -150,6 +174,14 @@ export function WeekTab({ data, week, onChangeWeek }: Props) {
             <Text style={styles.logBtnText}>LOG</Text>
           </Pressable>
         </View>
+        {healthState === 'shouldRequest' && (
+          <Pressable onPress={connectHealth} style={styles.healthBtn}>
+            <Text style={styles.healthBtnText}>CONNECT APPLE HEALTH — AUTO-IMPORT SCALE WEIGHT</Text>
+          </Pressable>
+        )}
+        {healthState === 'granted' && (
+          <Text style={styles.healthNote}>APPLE HEALTH CONNECTED — SCALE WEIGHT IMPORTS ON LAUNCH</Text>
+        )}
 
         <Svg viewBox="0 0 366 190" style={styles.chart}>
           <Line x1={34} y1={wc.goalY} x2={360} y2={wc.goalY} stroke={palette.gold} strokeWidth={1} strokeDasharray="5 4" />
@@ -329,6 +361,29 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   chart: { width: '100%', aspectRatio: 366 / 190, marginTop: 12 },
+  healthBtn: {
+    borderWidth: 1,
+    borderColor: palette.border,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    marginTop: 8,
+  },
+  healthBtnText: {
+    fontFamily: FontFamily.display,
+    fontSize: 12,
+    letterSpacing: 1,
+    color: palette.textDim,
+    textAlign: 'center',
+  },
+  healthNote: {
+    fontFamily: FontFamily.mono,
+    fontSize: 11,
+    letterSpacing: 0.5,
+    color: palette.green,
+    marginTop: 8,
+  },
   wtRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

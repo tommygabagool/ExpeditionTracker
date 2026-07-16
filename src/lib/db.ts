@@ -115,6 +115,23 @@ create table if not exists exercise_logs (
   unique (log_date, exercise_id)
 );
 
+create table if not exists my_foods (
+  id text primary key,
+  label text not null,
+  brand text,
+  serving_desc text,
+  kcal integer not null,
+  protein_g real,
+  carbs_g real,
+  fat_g real,
+  source text not null default 'manual',
+  source_id text,
+  barcode text,
+  use_count integer not null default 0,
+  updated_at text not null,
+  deleted_at text
+);
+
 create table if not exists outbox (
   seq integer primary key autoincrement,
   table_name text not null,
@@ -222,6 +239,22 @@ export const TABLE_COLUMNS = {
     'set_target',
     'suggested_weight_lb',
     'sets',
+    'updated_at',
+    'deleted_at',
+  ],
+  my_foods: [
+    'id',
+    'label',
+    'brand',
+    'serving_desc',
+    'kcal',
+    'protein_g',
+    'carbs_g',
+    'fat_g',
+    'source',
+    'source_id',
+    'barcode',
+    'use_count',
     'updated_at',
     'deleted_at',
   ],

@@ -5,6 +5,7 @@ import { StreakFlame } from '@/components/altimeter';
 import { BadgeMedal } from '@/components/badge-medal';
 import { FontFamily, palette } from '@/constants/theme';
 import type { AppData } from '@/data/store';
+import { PEAKS } from '@/data/peaks';
 import type { Ascent } from '@/program/ascent';
 import { CAMP_DEFS, type BadgeComputed } from '@/program/badges';
 import { fmtShort, keyOf, todayDate } from '@/program/schedule';
@@ -127,6 +128,48 @@ export function SummitTab({ data, badges, ascent, onBack }: Props) {
         <View style={styles.rankTrack}>
           <View style={[styles.rankFill, { width: `${Math.round(ascent.rankProgress * 100)}%` }]} />
         </View>
+      </View>
+
+      {/* Milestone peaks: world summits passed on the way up (static table). */}
+      <View style={styles.peaksPanel}>
+        <View style={styles.peaksHead}>
+          <Text style={styles.peaksTitle}>PEAKS BAGGED</Text>
+          <Text style={styles.peaksCount}>
+            {ascent.peaks.bagged.length}/{PEAKS.length}
+          </Text>
+        </View>
+        {PEAKS.map((p) => {
+          const bagged = ascent.altitudeFt >= p.elevationFt;
+          const isNext = ascent.peaks.next?.id === p.id;
+          return (
+            <View key={p.id} style={styles.peakRow}>
+              <View
+                style={[
+                  styles.peakDot,
+                  {
+                    backgroundColor: bagged ? palette.gold : 'transparent',
+                    borderColor: bagged ? palette.gold : isNext ? palette.orange : palette.lock,
+                  },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.peakName,
+                  { color: bagged ? palette.text : isNext ? palette.textDim : palette.faint },
+                ]}
+                numberOfLines={1}
+              >
+                {p.name}
+                <Text style={styles.peakRegion}> · {p.region}</Text>
+              </Text>
+              <Text style={[styles.peakAlt, { color: bagged ? palette.gold : palette.faint }]}>
+                {isNext
+                  ? ascent.peaks.toNextFt.toLocaleString('en-US') + ' FT TO GO'
+                  : p.elevationFt.toLocaleString('en-US') + ' FT'}
+              </Text>
+            </View>
+          );
+        })}
       </View>
 
       {/* Ascent diagram */}
@@ -277,6 +320,36 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   rankFill: { height: '100%', backgroundColor: palette.orange },
+  peaksPanel: {
+    backgroundColor: palette.panel,
+    borderWidth: 1,
+    borderColor: palette.line,
+    padding: 12,
+    gap: 8,
+  },
+  peaksHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 2,
+  },
+  peaksTitle: {
+    fontFamily: FontFamily.displaySemiBold,
+    fontSize: 17,
+    letterSpacing: 1,
+    color: palette.text,
+  },
+  peaksCount: { fontFamily: FontFamily.monoBold, fontSize: 14, color: palette.gold },
+  peakRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  peakDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 2 },
+  peakName: {
+    flex: 1,
+    fontFamily: FontFamily.displayMedium,
+    fontSize: 13,
+    letterSpacing: 0.5,
+  },
+  peakRegion: { fontFamily: FontFamily.mono, fontSize: 11, color: palette.muted, letterSpacing: 0 },
+  peakAlt: { fontFamily: FontFamily.mono, fontSize: 11, letterSpacing: 0.5 },
   ascentPanel: {
     backgroundColor: palette.panel,
     borderWidth: 1,

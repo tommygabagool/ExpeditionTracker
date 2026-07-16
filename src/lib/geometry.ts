@@ -93,6 +93,22 @@ export function trailProfile(seed: number, w: number, h: number) {
   return { line, area };
 }
 
+/** Real elevation profile (from the seeded trail-geo data) drawn in the same
+ *  chart frame as trailProfile: x 38→w-10, y bottom = min ft, top = max ft. */
+export function realTrailProfile(profileFt: number[], w: number, h: number) {
+  const minFt = Math.min(...profileFt);
+  const maxFt = Math.max(...profileFt);
+  const span = Math.max(1, maxFt - minFt);
+  const pts = profileFt.map((e, i) => {
+    const x = 38 + (i / (profileFt.length - 1)) * (w - 48);
+    const y = h - 16 - ((e - minFt) / span) * (h - 34);
+    return x.toFixed(1) + ' ' + y.toFixed(1);
+  });
+  const line = 'M' + pts.join(' L');
+  const area = line + ' L' + (w - 10) + ' ' + (h - 16) + ' L38 ' + (h - 16) + ' Z';
+  return { line, area, minFt, maxFt };
+}
+
 export interface WeightChart {
   points: { x: number; y: number }[];
   linePath: string;

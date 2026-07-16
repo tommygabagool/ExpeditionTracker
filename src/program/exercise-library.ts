@@ -1,3 +1,4 @@
+import { FEDB } from '@/data/fedb';
 import type { FigureName } from '@/data/figures';
 
 // Field-guide content for every movement the builder emits — what Session
@@ -34,6 +35,8 @@ export interface ExerciseInfo {
   safety?: string[];
   /** Line-art demo, when one exists. */
   figure?: FigureName;
+  /** Bundled free-exercise-db demo photos (start/end frame). */
+  images?: number[];
   /** Rest between sets, seconds. Unset = not set-based. */
   restSec?: number;
 }
@@ -615,9 +618,27 @@ export const EXERCISE_INFO: Record<string, ExerciseInfo> = {
   },
 };
 
-/** Info lookup with a safe empty fallback for names not in the library. */
+/** Info lookup with a safe empty fallback for names not in the library.
+ *  Movements seeded from free-exercise-db (src/data/fedb.ts, generated) show
+ *  that dataset's instructions, muscles and photos; rucks, mobility flows and
+ *  protocol lines keep the hand-curated entries above. Program plumbing
+ *  (id, kind, restSec) always comes from the curated entry so logs line up. */
 export function infoFor(name: string): ExerciseInfo | null {
-  return EXERCISE_INFO[name] ?? null;
+  const base = EXERCISE_INFO[name] ?? null;
+  const fedb = FEDB[name];
+  if (!fedb) return base;
+  return {
+    id: base?.id ?? slugFor(name),
+    kind: base?.kind ?? 'accessory',
+    restSec: base?.restSec,
+    muscles: fedb.muscles,
+    description: fedb.meta,
+    why: '',
+    how: fedb.instructions,
+    cues: [],
+    faults: [],
+    images: fedb.images,
+  };
 }
 
 /** Fallback slug for exercises missing from the library (future program edits). */

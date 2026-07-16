@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Line, Path, Text as SvgText } from 'react-native-svg';
 
@@ -6,8 +6,11 @@ import { TrailMap } from '@/components/trail-map';
 import { FontFamily, palette } from '@/constants/theme';
 import { logHike } from '@/data/repos';
 import type { AppData } from '@/data/store';
+import { TRAIL_GEO } from '@/data/trail-geo';
 import { diffColor, TRAILS, type Trail } from '@/data/trails';
-import { topo, trailProfile, trailRoute } from '@/lib/geometry';
+import { realTrailProfile, topo, trailProfile, trailRoute } from '@/lib/geometry';
+import { saveWorkoutToHealth } from '@/lib/health';
+import { getTrailheadWeather, weatherLine, type WeatherResult } from '@/lib/weather';
 import {
   fmtShort,
   keyOf,
@@ -91,6 +94,18 @@ export function TrailsTab({ data }: { data: AppData }) {
     Math.abs(t.gain - tgt) < Math.abs(best.gain - tgt) ? t : best,
   );
 
+  // Saturday forecast at the suggested trailhead — cached per day, stale-ok.
+  const [wx, setWx] = useState<WeatherResult | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getTrailheadWeather(suggested, satKey).then((r) => {
+      if (alive) setWx(r);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [suggested, satKey]);
+
   const passes = (t: Trail) =>
     (filters.dist === 'any' || (filters.dist === 'short' ? t.dist < 4 : t.dist >= 4)) &&
     (filters.gain === 'any' || (filters.gain === 'low' ? t.gain < 1000 : t.gain >= 1000)) &&
@@ -128,7 +143,10 @@ export function TrailsTab({ data }: { data: AppData }) {
 
   if (sel) {
     const dc = diffColor(sel.diff);
-    const prof = trailProfile(sel.seed, 358, 130);
+    // Seeded trails draw their real elevation profile; others keep the
+    // procedural art until seed-trails.ts resolves them.
+    const real = TRAIL_GEO[sel.id] ? realTrailProfile(TRAIL_GEO[sel.id].profileFt, 358, 130) : null;
+    const prof = real ?? trailProfile(sel.seed, 358, 130);
     return (
       <View style={styles.container}>
         <Pressable onPress={() => setTrailSel(null)} style={styles.backBtn}>
@@ -164,10 +182,10 @@ export function TrailsTab({ data }: { data: AppData }) {
               <Line x1={38} y1={18} x2={348} y2={18} stroke={palette.line} strokeWidth={1} strokeDasharray="2 4" />
               <Line x1={38} y1={114} x2={348} y2={114} stroke={palette.line} strokeWidth={1} />
               <SvgText x={34} y={21} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
-                {sel.gain.toLocaleString('en-US') + ' FT'}
+                {(real ? real.maxFt : sel.gain).toLocaleString('en-US') + ' FT'}
               </SvgText>
               <SvgText x={34} y={117} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
-                0
+                {real ? real.minFt.toLocaleString('en-US') : '0'}
               </SvgText>
               <Path d={prof.area} fill={palette.orange} opacity={0.12} />
               <Path d={prof.line} fill="none" stroke={palette.orange} strokeWidth={2} strokeLinejoin="round" />
@@ -184,7 +202,15 @@ export function TrailsTab({ data }: { data: AppData }) {
             <Text style={styles.notesText}>{sel.notes}</Text>
 
             <Pressable
-              onPress={() => logHike(sel, satKey)}
+              onPress={() => {
+                logHike(sel, satKey);
+                // Mirror the ruck into Apple Health using the trail's time
+                // estimate (h:mm) — no-op unless Health is connected.
+                const [h, m] = sel.time.split(':').map(Number);
+                if (!satDone) {
+                  void saveWorkoutToHealth('ruck', ((h || 0) * 60 + (m || 0)) * 60);
+                }
+              }}
               style={[styles.logHikeBtn, { backgroundColor: satDone ? palette.green : palette.orange, borderColor: satDone ? palette.green : palette.orange }]}>
               <Text style={styles.logHikeText}>
                 {satDone ? '✓ LOGGED — SATURDAY COMPLETE' : 'LOG THIS HIKE'}
@@ -207,6 +233,12 @@ export function TrailsTab({ data }: { data: AppData }) {
           {PHASE_PACK_LB[satPhaseIdx]} LB RUCK · {PHASE_HOURS[satPhaseIdx].toUpperCase()} ·{' '}
           {PHASE_GAIN_FT[satPhaseIdx]} FT GAIN
         </Text>
+        {wx && (
+          <Text style={styles.satWx}>
+            {weatherLine(wx.weather)}
+            {wx.stale ? ' · CACHED' : ''}
+          </Text>
+        )}
         <Text style={[styles.sectionLabel, { marginTop: 14 }]}>SUGGESTED MATCH</Text>
         <View style={{ marginTop: 6 }}>
           <TrailCard trail={suggested} onOpen={() => setTrailSel(suggested.id)} bordered />
@@ -277,6 +309,7 @@ const styles = StyleSheet.create({
   },
   satDate: { fontFamily: FontFamily.mono, fontSize: 13, color: palette.muted },
   satRx: { fontFamily: FontFamily.mono, fontSize: 18, color: palette.gold, marginTop: 8 },
+  satWx: { fontFamily: FontFamily.mono, fontSize: 12, color: palette.textDim, marginTop: 6, letterSpacing: 0.5 },
   sectionLabel: {
     fontFamily: FontFamily.display,
     fontSize: 13,

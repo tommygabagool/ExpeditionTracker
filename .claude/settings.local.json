@@ -10,7 +10,11 @@
       "PowerShell(npm i -D sharp)",
       "PowerShell(node scripts\\\\make-icons.js)",
       "WebFetch(domain:docs.expo.dev)",
-      "PowerShell(npx tsc --noEmit; if \\($?\\) { npx expo export --platform ios --output-dir \"$env:LOCALAPPDATA\\\\Temp\\\\claude\\\\c--Dev-ExpeditionTracker\\\\f176786e-8aa7-4b72-a01f-7b8f08ba31ae\\\\scratchpad\\\\export-test\" 2>&1 | Select-Object -Last 3 })"
+      "PowerShell(npx tsc --noEmit; if \\($?\\) { npx expo export --platform ios --output-dir \"$env:LOCALAPPDATA\\\\Temp\\\\claude\\\\c--Dev-ExpeditionTracker\\\\f176786e-8aa7-4b72-a01f-7b8f08ba31ae\\\\scratchpad\\\\export-test\" 2>&1 | Select-Object -Last 3 })",
+      "Bash(curl -sL -o exercises.json https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json)",
+      "Bash(node -e \"const d=require\\('./exercises.json'\\); console.log\\('count:', d.length\\); console.log\\(JSON.stringify\\(d[0],null,1\\).slice\\(0,600\\)\\)\")",
+      "Bash(npm run *)",
+      "Bash(curl -s -X POST \"https://overpass.kumi.systems/api/interpreter\" -H \"User-Agent: SwitchbackSeeder/1.0\" --data-urlencode 'data=[out:json][timeout:30];way[\"highway\"][\"name\"~\"Tower Trail\",i]\\(around:3500,41.4218,-72.906\\);out tags;')"
     ]
   }
 }

@@ -1,14 +1,16 @@
-import Mapbox, { Camera, MapView, MarkerView } from '@rnmapbox/maps';
+import Mapbox, { Camera, LineLayer, MapView, MarkerView, ShapeSource } from '@rnmapbox/maps';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { FontFamily, palette } from '@/constants/theme';
+import { TRAIL_GEO } from '@/data/trail-geo';
 import { MAP_STYLE_URL, MAPBOX_READY } from '@/lib/mapbox';
 import type { Trail } from '@/data/trails';
 
 // Live trailhead map for the detail view. One MapView instance only — list
 // cards keep the cheap procedural SVG art. Falls back to a message when no
-// token is configured so the app still runs.
+// token is configured so the app still runs. Seeded trails (trail-geo.ts)
+// draw their real OSM route and fit the camera to it.
 export function TrailMap({ trail }: { trail: Trail }) {
   if (!MAPBOX_READY) {
     return (
@@ -17,6 +19,24 @@ export function TrailMap({ trail }: { trail: Trail }) {
       </View>
     );
   }
+
+  const geo = TRAIL_GEO[trail.id];
+  const bounds = geo
+    ? {
+        ne: [
+          Math.max(...geo.path.map((p) => p[0])),
+          Math.max(...geo.path.map((p) => p[1])),
+        ] as [number, number],
+        sw: [
+          Math.min(...geo.path.map((p) => p[0])),
+          Math.min(...geo.path.map((p) => p[1])),
+        ] as [number, number],
+        paddingTop: 28,
+        paddingBottom: 28,
+        paddingLeft: 28,
+        paddingRight: 28,
+      }
+    : null;
 
   return (
     <View style={styles.map}>
@@ -29,9 +49,27 @@ export function TrailMap({ trail }: { trail: Trail }) {
         scaleBarEnabled={false}
         compassEnabled={false}>
         <Camera
-          defaultSettings={{ centerCoordinate: trail.center, zoomLevel: 12.5 }}
+          defaultSettings={
+            bounds ? { bounds } : { centerCoordinate: trail.center, zoomLevel: 12.5 }
+          }
           animationMode="none"
         />
+        {geo && (
+          <ShapeSource
+            id="trail-route"
+            shape={{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: geo.path } }}>
+            <LineLayer
+              id="trail-route-line"
+              style={{
+                lineColor: palette.orange,
+                lineWidth: 2.5,
+                lineDasharray: [2, 1.5],
+                lineCap: 'round',
+                lineJoin: 'round',
+              }}
+            />
+          </ShapeSource>
+        )}
         <MarkerView coordinate={trail.center} anchor={{ x: 0.5, y: 1 }}>
           <Svg viewBox="0 0 24 24" width={30} height={30}>
             <Path

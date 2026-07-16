@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,11 +11,12 @@ import { SwitchbackRail } from '@/components/switchback-rail';
 import { FontFamily, goldTint, palette } from '@/constants/theme';
 import { completeWorkout, logExerciseSets } from '@/data/repos';
 import type { AppData } from '@/data/store';
+import { saveWorkoutToHealth } from '@/lib/health';
 import { cancelRestDone, ensureRestNotifications, scheduleRestDone } from '@/lib/rest-notify';
 import { keepAwakeOff, keepAwakeOn, successFx, tapFx } from '@/lib/session-fx';
 import type { Ascent } from '@/program/ascent';
 import { suggestForExercise, type ExerciseLogEntry, type Suggestion } from '@/program/estimator';
-import { EXERCISE_INFO, slugFor, type ExerciseInfo } from '@/program/exercise-library';
+import { infoFor, slugFor, type ExerciseInfo } from '@/program/exercise-library';
 import { platesPerSide, warmupRamp } from '@/program/loading';
 import { getWorkout } from '@/program/program';
 import { currentWeek, DAY_NAMES, fmtShort, isDeloadWeek, keyOf, phaseOf, todayDate } from '@/program/schedule';
@@ -81,7 +83,7 @@ export function SessionMode({ data, ascent, onExit }: Props) {
   // only pre-today history, so mid-session writes must not reshuffle them.
   const [pitches] = useState<Pitch[]>(() =>
     workout.exercises.map((ex) => {
-      const info = EXERCISE_INFO[ex.name] ?? null;
+      const info = infoFor(ex.name);
       const suggestion = suggestForExercise(ex.name, ex.detail, data.profile, week, data.exerciseLogs, todayKey);
       const m = ex.detail.match(SETS_RE);
       const isLoggable = !!m && info?.kind !== 'protocol' && info?.kind !== 'cardio' && info?.kind !== 'mobility';
@@ -228,6 +230,8 @@ export function SessionMode({ data, ascent, onExit }: Props) {
       completeWorkout(todayKey, {
         session: { durationSec: elapsedSec, volumeLb: Math.round(volume), setsDone },
       });
+      // Mirror the session into Apple Health (no-op unless connected).
+      void saveWorkoutToHealth('strength', elapsedSec);
       successFx();
     }
     onExit();
@@ -383,7 +387,16 @@ export function SessionMode({ data, ascent, onExit }: Props) {
                 </Text>
               )}
 
-              {p.info?.figure && (
+              {p.info?.images && p.info.images.length > 0 ? (
+                <View style={styles.figurePanel}>
+                  <View style={styles.photoRow}>
+                    {p.info.images.map((src, i) => (
+                      <Image key={i} source={src} style={styles.photo} contentFit="cover" />
+                    ))}
+                  </View>
+                  <Text style={styles.figCaption}>FIG · {p.name.toUpperCase()}</Text>
+                </View>
+              ) : p.info?.figure ? (
                 <View style={styles.figurePanel}>
                   <ExerciseFigure name={p.info.figure} />
                   <Text style={styles.figCaption}>FIG · {p.name.toUpperCase()}</Text>
@@ -394,7 +407,7 @@ export function SessionMode({ data, ascent, onExit }: Props) {
                     <Text style={styles.legendText}>LOAD PATH</Text>
                   </View>
                 </View>
-              )}
+              ) : null}
 
               {p.info && (
                 <View style={styles.cues}>
@@ -469,10 +482,12 @@ export function SessionMode({ data, ascent, onExit }: Props) {
 
               {p.info && (
                 <View style={styles.notes}>
-                  <View>
-                    <Text style={styles.noteHead}>WHY WE DO IT</Text>
-                    <Text style={styles.why}>{p.info.why}</Text>
-                  </View>
+                  {p.info.why.length > 0 && (
+                    <View>
+                      <Text style={styles.noteHead}>WHY WE DO IT</Text>
+                      <Text style={styles.why}>{p.info.why}</Text>
+                    </View>
+                  )}
                   <View>
                     <Text style={styles.noteHead}>FORM</Text>
                     {p.info.how.map((h, i) => (
@@ -482,15 +497,17 @@ export function SessionMode({ data, ascent, onExit }: Props) {
                       </Text>
                     ))}
                   </View>
-                  <View>
-                    <Text style={styles.noteHead}>WATCH FOR</Text>
-                    {p.info.faults.map((f) => (
-                      <Text key={f} style={styles.noteLine}>
-                        <Text style={{ color: palette.orange }}>✕ </Text>
-                        {f}
-                      </Text>
-                    ))}
-                  </View>
+                  {p.info.faults.length > 0 && (
+                    <View>
+                      <Text style={styles.noteHead}>WATCH FOR</Text>
+                      {p.info.faults.map((f) => (
+                        <Text key={f} style={styles.noteLine}>
+                          <Text style={{ color: palette.orange }}>✕ </Text>
+                          {f}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
                   {p.info.safety && p.info.safety.length > 0 && (
                     <View style={styles.safetyBox}>
                       <Text style={[styles.noteHead, { color: palette.gold }]}>SAFETY</Text>
@@ -702,6 +719,16 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     color: palette.faint,
     marginTop: 4,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    gap: 1,
+    paddingHorizontal: 12,
+  },
+  photo: {
+    flex: 1,
+    aspectRatio: 1,
+    backgroundColor: palette.panelDeep,
   },
   legendRow: {
     flexDirection: 'row',

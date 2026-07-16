@@ -1,3 +1,4 @@
+import { peaksFor, type PeakProgress } from '@/data/peaks';
 import type { AppData } from '@/data/store';
 import { isDeloadWeek, keyOf, PROGRAM_START, PROGRAM_WEEKS, todayDate, weekOfKey } from './schedule';
 
@@ -49,6 +50,8 @@ export interface Ascent {
   bestStreak: number;
   /** True when the current streak survived a deload-week gap. */
   shielded: boolean;
+  /** Milestone world peaks passed at this altitude (see src/data/peaks.ts). */
+  peaks: PeakProgress;
 }
 
 const DAY_MS = 86_400_000;
@@ -126,6 +129,7 @@ export function computeAscent(data: AppData): Ascent {
     streak,
     bestStreak: computeBestStreak(data.completions),
     shielded,
+    peaks: peaksFor(altitudeFt),
   };
 }
 
