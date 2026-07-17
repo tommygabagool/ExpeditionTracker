@@ -2,9 +2,11 @@ import * as Crypto from 'expo-crypto';
 
 import { notifyDataChanged } from '@/data/store';
 import { db, upsertLocal, type SyncedTable } from '@/lib/db';
+import { syncSaturdayRuckNotification } from '@/lib/ruck-notify';
 import { anchorMaxes } from '@/program/estimator';
 import type { Anchor, Equipment, Experience } from '@/program/lifts';
 import type { Activity, Sex } from '@/program/nutrition';
+import { configureSchedule, type TripConfig } from '@/program/schedule';
 import { START_WEIGHT_LB } from '@/program/goals';
 import { enqueue } from '@/sync/engine';
 import type { Trail } from './trails';
@@ -232,6 +234,8 @@ export interface ProfileInput {
   ageYears: number | null;
   sex: Sex | null;
   activity: Activity | null;
+  /** THE OBJECTIVE; null = stock 26-week program. */
+  trip: TripConfig | null;
 }
 
 function profileId(): string {
@@ -263,10 +267,20 @@ export function saveProfile(input: ProfileInput, onboardingComplete = true): voi
     age_years: input.ageYears,
     sex: input.sex,
     activity: input.activity,
+    trip_name: input.trip?.name ?? null,
+    trip_date: input.trip?.date ?? null,
+    trip_style: input.trip?.style ?? null,
+    trip_gain_ft: input.trip?.biggestDayGainFt ?? null,
+    trip_pack_lb: input.trip?.packWeightLb ?? null,
+    trip_max_alt_ft: input.trip?.maxAltitudeFt ?? null,
     onboarding_complete: onboardingComplete,
     updated_at: nowIso(),
     deleted_at: null,
   });
+  // Re-anchor the calendar now, then refresh Saturday's alert so a trip edit
+  // reschedules it with the new week/prescription.
+  configureSchedule(input.trip);
+  void syncSaturdayRuckNotification();
 }
 
 /** Seed a conservative default profile on first run so weights render before
@@ -291,6 +305,12 @@ export function ensureDefaultProfile(): void {
     age_years: null,
     sex: null,
     activity: null,
+    trip_name: null,
+    trip_date: null,
+    trip_style: null,
+    trip_gain_ft: null,
+    trip_pack_lb: null,
+    trip_max_alt_ft: null,
     onboarding_complete: false,
     updated_at: '1970-01-01T00:00:00.000Z',
     deleted_at: null,

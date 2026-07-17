@@ -21,7 +21,7 @@ import { useSession } from '@/hooks/use-session';
 import { computeAscent } from '@/program/ascent';
 import { CAMP_DEFS, computeBadges } from '@/program/badges';
 import { GOAL_WEIGHT_LB, START_WEIGHT_LB } from '@/program/goals';
-import { currentWeek, keyOf, todayDate } from '@/program/schedule';
+import { currentWeek, keyOf, programWeeks, todayDate } from '@/program/schedule';
 
 type Screen = MainTab | 'summit';
 
@@ -105,7 +105,7 @@ export default function AppScreen() {
         <View style={{ height: insets.top }} />
         <Header
           badgeCountLine={`${totalEarned}/${badges.length}`}
-          metaLine={`${ascent.rank.title} · ${ascent.altitudeFt.toLocaleString('en-US')} FT · WK ${String(currentWeek()).padStart(2, '0')}/26`}
+          metaLine={`${ascent.rank.title} · ${ascent.altitudeFt.toLocaleString('en-US')} FT · WK ${String(currentWeek()).padStart(2, '0')}/${String(programWeeks()).padStart(2, '0')}`}
           startW={START_WEIGHT_LB.toFixed(0)}
           currentW={cur.toFixed(1)}
           goalW={GOAL_WEIGHT_LB.toFixed(0)}

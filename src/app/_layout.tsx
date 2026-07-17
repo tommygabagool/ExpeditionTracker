@@ -15,6 +15,7 @@ import { useEffect } from 'react';
 
 import { palette } from '@/constants/theme';
 import { ensureDefaultProfile } from '@/data/repos';
+import { initSchedule } from '@/data/store';
 import { importHealthWeight } from '@/lib/health';
 import { initMapbox } from '@/lib/mapbox';
 import { syncSaturdayRuckNotification } from '@/lib/ruck-notify';
@@ -54,6 +55,8 @@ export default function RootLayout() {
   useEffect(() => {
     initMapbox();
     ensureDefaultProfile();
+    // Point the calendar at the saved trip BEFORE anything reads the schedule.
+    initSchedule();
     // Refresh the Saturday-ruck alert with the latest trailhead forecast.
     syncSaturdayRuckNotification();
     // No-ops unless Health authorization was already granted (see health.ts).

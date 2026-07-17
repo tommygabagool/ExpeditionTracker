@@ -94,6 +94,12 @@ create table if not exists user_profile (
   age_years integer,
   sex text,
   activity text,
+  trip_name text,
+  trip_date text,
+  trip_style text,
+  trip_gain_ft integer,
+  trip_pack_lb real,
+  trip_max_alt_ft integer,
   onboarding_complete integer not null default 0,
   updated_at text not null,
   deleted_at text
@@ -162,6 +168,24 @@ create table if not exists sync_state (
   }
 }
 
+// 0005: trip objective — additive columns for databases created before them.
+{
+  const existing = db
+    .getAllSync<{ name: string }>('pragma table_info(user_profile)')
+    .map((r) => r.name);
+  const added: [string, string][] = [
+    ['trip_name', 'trip_name text'],
+    ['trip_date', 'trip_date text'],
+    ['trip_style', 'trip_style text'],
+    ['trip_gain_ft', 'trip_gain_ft integer'],
+    ['trip_pack_lb', 'trip_pack_lb real'],
+    ['trip_max_alt_ft', 'trip_max_alt_ft integer'],
+  ];
+  for (const [col, ddl] of added) {
+    if (!existing.includes(col)) db.execSync(`alter table user_profile add column ${ddl}`);
+  }
+}
+
 export const TABLE_COLUMNS = {
   workout_completions: [
     'id',
@@ -224,6 +248,12 @@ export const TABLE_COLUMNS = {
     'age_years',
     'sex',
     'activity',
+    'trip_name',
+    'trip_date',
+    'trip_style',
+    'trip_gain_ft',
+    'trip_pack_lb',
+    'trip_max_alt_ft',
     'onboarding_complete',
     'updated_at',
     'deleted_at',

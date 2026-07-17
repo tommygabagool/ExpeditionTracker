@@ -7,7 +7,7 @@ import { setDailyCalories } from '@/data/repos';
 import type { AppData } from '@/data/store';
 import { GOAL_WEIGHT_LB } from '@/program/goals';
 import { fuelPlan, type FuelStats } from '@/program/nutrition';
-import { DAY_NAMES, fmtShort, keyOf, todayDate } from '@/program/schedule';
+import { DAY_NAMES, fmtShort, keyOf, programWeeks, todayDate } from '@/program/schedule';
 
 const FOOD_GUIDE = [
   {
@@ -121,7 +121,7 @@ export function FuelTab({ data }: { data: AppData }) {
             ? 'DEFAULT TARGETS — ADD FUEL STATS IN CALIBRATION (BARBELL ICON)'
             : plan.maintain
               ? `AT GOAL — HOLDING ${currentLb.toFixed(0)} LB AT MAINTENANCE`
-              : `${currentLb.toFixed(1)} LB → ${GOAL_WEIGHT_LB} BY WK 26 · −${plan.lbPerWeek.toFixed(1)} LB/WK`}
+              : `${currentLb.toFixed(1)} LB → ${GOAL_WEIGHT_LB} BY WK ${programWeeks()} · −${plan.lbPerWeek.toFixed(1)} LB/WK`}
         </Text>
       </View>
 

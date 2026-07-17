@@ -1,23 +1,24 @@
 import { peaksFor, type PeakProgress } from '@/data/peaks';
 import type { AppData } from '@/data/store';
-import { isDeloadWeek, keyOf, PROGRAM_START, PROGRAM_WEEKS, todayDate, weekOfKey } from './schedule';
+import { isDeloadWeek, keyOf, PROGRAM_START, programWeeks, todayDate, weekOfKey } from './schedule';
 
-// Altitude XP: the 26-week program IS the climb. Every completed session earns
+// Altitude XP: the program IS the climb. Every completed session earns
 // vertical feet toward Everest's 29,032; Saturday rucks weigh 2.5× a weekday
-// session. Completing the whole program lands exactly on the summit.
+// session. Completing the whole program — stock or trip-shortened — lands
+// exactly on the summit (the ladder rescales off programWeeks()).
 
 export const SUMMIT_FT = 29032;
 
 const RUCK_WEIGHT = 2.5;
 const WEEK_WEIGHT = 6 + RUCK_WEIGHT; // 6 weekday sessions + the ruck
-const TOTAL_WEIGHT = PROGRAM_WEEKS * WEEK_WEIGHT;
+const totalWeight = () => programWeeks() * WEEK_WEIGHT;
 
 function sessionWeight(dateKey: string): number {
   return new Date(dateKey + 'T00:00:00').getDay() === 6 ? RUCK_WEIGHT : 1;
 }
 
 export function feetFor(dateKey: string): number {
-  return Math.round((sessionWeight(dateKey) / TOTAL_WEIGHT) * SUMMIT_FT);
+  return Math.round((sessionWeight(dateKey) / totalWeight()) * SUMMIT_FT);
 }
 
 export interface Rank {
@@ -101,7 +102,7 @@ export function computeAscent(data: AppData): Ascent {
       doneWeight += sessionWeight(key);
     }
   }
-  const altitudeFt = Math.min(SUMMIT_FT, Math.round((doneWeight / TOTAL_WEIGHT) * SUMMIT_FT));
+  const altitudeFt = Math.min(SUMMIT_FT, Math.round((doneWeight / totalWeight()) * SUMMIT_FT));
 
   let rank = RANKS[0];
   let nextRank: Rank | null = null;

@@ -10,6 +10,8 @@ import { anchorMaxes } from '@/program/estimator';
 import { START_WEIGHT_LB } from '@/program/goals';
 import type { Anchor, Equipment, Experience } from '@/program/lifts';
 import { fuelPlan, type Activity, type Sex } from '@/program/nutrition';
+import { deriveCalendar, startDate, type TripConfig, type TripStyle } from '@/program/schedule';
+import { ruckRxFor } from '@/program/trip';
 
 const EXPERIENCE_OPTS: { value: Experience; label: string; sub: string }[] = [
   { value: 'new', label: 'NEW', sub: 'First time under a bar' },
@@ -28,6 +30,12 @@ const ANCHOR_ROWS: { anchor: Anchor; label: string }[] = [
   { anchor: 'deadlift', label: 'Deadlift' },
   { anchor: 'press', label: 'Overhead Press' },
   { anchor: 'row', label: 'Barbell Row' },
+];
+
+const STYLE_OPTS: { value: TripStyle; label: string; sub: string }[] = [
+  { value: 'trail', label: 'TRAIL', sub: 'Big miles, moderate grade' },
+  { value: 'technical', label: 'TECHNICAL', sub: 'Scrambling, grip and calves' },
+  { value: 'expedition', label: 'EXPEDITION', sub: 'Heavy pack, long haul' },
 ];
 
 const SEX_OPTS: { value: Sex; label: string; sub: string }[] = [
@@ -62,6 +70,21 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
   const [age, setAge] = useState(profile?.ageYears ? String(profile.ageYears) : '');
   const [sex, setSex] = useState<Sex | null>(profile?.sex ?? null);
   const [activity, setActivity] = useState<Activity | null>(profile?.activity ?? null);
+  const savedTrip = profile?.trip ?? null;
+  const [tripName, setTripName] = useState(savedTrip?.name ?? '');
+  const [tripMM, setTripMM] = useState(savedTrip?.date ? savedTrip.date.slice(5, 7) : '');
+  const [tripDD, setTripDD] = useState(savedTrip?.date ? savedTrip.date.slice(8, 10) : '');
+  const [tripYYYY, setTripYYYY] = useState(savedTrip?.date ? savedTrip.date.slice(0, 4) : '');
+  const [tripStyle, setTripStyle] = useState<TripStyle | null>(savedTrip?.style ?? null);
+  const [tripGain, setTripGain] = useState(
+    savedTrip?.biggestDayGainFt ? String(savedTrip.biggestDayGainFt) : '',
+  );
+  const [tripPack, setTripPack] = useState(
+    savedTrip?.packWeightLb ? String(savedTrip.packWeightLb) : '',
+  );
+  const [tripAlt, setTripAlt] = useState(
+    savedTrip?.maxAltitudeFt ? String(savedTrip.maxAltitudeFt) : '',
+  );
 
   const bwNum = parseFloat(bw) || START_WEIGHT_LB;
   const calibration: Partial<Record<Anchor, number>> = {};
@@ -85,8 +108,45 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
     activity: statsComplete ? activity : null,
   };
 
+  // THE OBJECTIVE — every field optional; a date counts only if it round-trips
+  // through the Date constructor (no Feb 30).
+  const tm = parseInt(tripMM, 10);
+  const td = parseInt(tripDD, 10);
+  const ty = parseInt(tripYYYY, 10);
+  const tripDateObj = new Date(ty, (tm || 1) - 1, td || 1);
+  const dateValid =
+    ty > 0 &&
+    tm > 0 &&
+    td > 0 &&
+    tripDateObj.getFullYear() === ty &&
+    tripDateObj.getMonth() === tm - 1 &&
+    tripDateObj.getDate() === td;
+  const tripDate = dateValid
+    ? `${ty}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`
+    : null;
+  const gainNum = parseInt(tripGain, 10) || 0;
+  const packNum = parseFloat(tripPack) || 0;
+  const altNum = parseInt(tripAlt, 10) || 0;
+  const hasTrip = !!(tripName.trim() || tripDate || tripStyle || gainNum > 0 || packNum > 0 || altNum > 0);
+  const trip: TripConfig | null = hasTrip
+    ? {
+        name: tripName.trim() || null,
+        date: tripDate,
+        style: tripStyle,
+        biggestDayGainFt: gainNum > 0 ? gainNum : null,
+        packWeightLb: packNum > 0 ? packNum : null,
+        maxAltitudeFt: altNum > 0 ? altNum : null,
+      }
+    : null;
+  // Preview through the pure derivations — never configureSchedule pre-save.
+  const tripCal = tripDate ? deriveCalendar(trip) : null;
+  const peakRx = tripDate ? ruckRxFor(trip, 2) : null;
+  const rawTripWeeks = tripDate
+    ? Math.floor((new Date(tripDate + 'T00:00:00').getTime() - startDate().getTime()) / 604800000) + 1
+    : 0;
+
   const lockIn = () => {
-    saveProfile({ bodyweightLb: bwNum, experience, equipment, calibration, ...fuelFields });
+    saveProfile({ bodyweightLb: bwNum, experience, equipment, calibration, trip, ...fuelFields });
     onDone();
   };
   const skip = () => {
@@ -99,6 +159,7 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
       ageYears: profile?.ageYears ?? null,
       sex: profile?.sex ?? null,
       activity: profile?.activity ?? null,
+      trip: profile?.trip ?? null,
     });
     onDone();
   };
@@ -172,6 +233,107 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
               />
             ))}
           </View>
+        </View>
+
+        <View style={styles.panel}>
+          <Text style={styles.panelTitle}>THE OBJECTIVE · OPTIONAL</Text>
+          <Text style={styles.calHint}>
+            Name the trip and the program re-anchors: it ends on your trip date (the final week
+            tapers) and Saturday rucks build toward your pack and biggest day. Leave blank to run
+            the stock 26 weeks.
+          </Text>
+          <TextInput
+            value={tripName}
+            onChangeText={setTripName}
+            placeholder="Trip name"
+            placeholderTextColor={palette.faint}
+            style={styles.tripNameInput}
+          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }}>
+            <TextInput
+              value={tripMM}
+              onChangeText={setTripMM}
+              keyboardType="number-pad"
+              placeholder="MM"
+              placeholderTextColor={palette.faint}
+              style={styles.statInput}
+            />
+            <Text style={styles.unit}>/</Text>
+            <TextInput
+              value={tripDD}
+              onChangeText={setTripDD}
+              keyboardType="number-pad"
+              placeholder="DD"
+              placeholderTextColor={palette.faint}
+              style={styles.statInput}
+            />
+            <Text style={styles.unit}>/</Text>
+            <TextInput
+              value={tripYYYY}
+              onChangeText={setTripYYYY}
+              keyboardType="number-pad"
+              placeholder="YYYY"
+              placeholderTextColor={palette.faint}
+              style={[styles.statInput, styles.yearInput]}
+            />
+            <Text style={styles.unit}>TRIP DATE</Text>
+          </View>
+          <View style={{ gap: 8, marginTop: 12 }}>
+            {STYLE_OPTS.map((o) => (
+              <OptionRow
+                key={o.value}
+                label={o.label}
+                sub={o.sub}
+                active={tripStyle === o.value}
+                onPress={() => setTripStyle(tripStyle === o.value ? null : o.value)}
+              />
+            ))}
+          </View>
+          <View style={{ gap: 10, marginTop: 12 }}>
+            <View style={styles.calRow}>
+              <Text style={styles.calLabel}>Biggest day gain</Text>
+              <TextInput
+                value={tripGain}
+                onChangeText={setTripGain}
+                keyboardType="number-pad"
+                placeholder="—"
+                placeholderTextColor={palette.faint}
+                style={styles.calInput}
+              />
+              <Text style={styles.unit}>FT</Text>
+            </View>
+            <View style={styles.calRow}>
+              <Text style={styles.calLabel}>Pack weight</Text>
+              <TextInput
+                value={tripPack}
+                onChangeText={setTripPack}
+                keyboardType="decimal-pad"
+                placeholder="—"
+                placeholderTextColor={palette.faint}
+                style={styles.calInput}
+              />
+              <Text style={styles.unit}>LB</Text>
+            </View>
+            <View style={styles.calRow}>
+              <Text style={styles.calLabel}>Max altitude</Text>
+              <TextInput
+                value={tripAlt}
+                onChangeText={setTripAlt}
+                keyboardType="number-pad"
+                placeholder="—"
+                placeholderTextColor={palette.faint}
+                style={styles.calInput}
+              />
+              <Text style={styles.unit}>FT</Text>
+            </View>
+          </View>
+          {tripCal && peakRx && (
+            <Text style={styles.fuelPreview}>
+              → {tripCal.weeks} WEEKS TO SUMMIT · TAPER WK {tripCal.taperWeek} · PEAK RUCK{' '}
+              {peakRx.packLb} LB · {peakRx.gainFt.toLocaleString('en-US')} FT
+              {rawTripWeeks < 8 ? ' · HELD AT THE 8-WEEK MINIMUM' : ''}
+            </Text>
+          )}
         </View>
 
         <View style={styles.panel}>
@@ -409,6 +571,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     minHeight: 44,
     textAlign: 'center',
+  },
+  yearInput: { width: 84 },
+  tripNameInput: {
+    backgroundColor: palette.bg,
+    borderWidth: 1,
+    borderColor: palette.line,
+    color: palette.text,
+    fontFamily: FontFamily.mono,
+    fontSize: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    minHeight: 44,
+    marginTop: 12,
   },
   fuelPreview: {
     fontFamily: FontFamily.monoBold,

@@ -4,7 +4,7 @@ import {
   PHASE_HOURS,
   PHASE_PACK_LB,
   phaseOf,
-  PROGRAM_WEEKS,
+  STOCK_PROGRAM_WEEKS,
 } from './schedule';
 
 // Ported verbatim from the design file's `workoutFor` — the program's source
@@ -126,7 +126,9 @@ export interface ProgramDaySeed {
 
 export function buildProgram(): ProgramDaySeed[] {
   const out: ProgramDaySeed[] = [];
-  for (let week = 1; week <= PROGRAM_WEEKS; week++) {
+  // Always the stock 26 weeks — the seed output must stay byte-stable
+  // regardless of any configured trip (personalization is read-time only).
+  for (let week = 1; week <= STOCK_PROGRAM_WEEKS; week++) {
     for (let day = 0; day < 7; day++) {
       const w = workoutFor(week, day);
       out.push({

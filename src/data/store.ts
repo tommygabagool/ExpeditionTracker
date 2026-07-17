@@ -5,7 +5,12 @@ import type { AnchorMaxes, ExerciseLogEntry, LoggedSet } from '@/program/estimat
 import { START_WEIGHT_LB } from '@/program/goals';
 import type { Equipment, Experience } from '@/program/lifts';
 import type { Activity, Sex } from '@/program/nutrition';
-import { PROGRAM_START } from '@/program/schedule';
+import {
+  configureSchedule,
+  PROGRAM_START,
+  type TripConfig,
+  type TripStyle,
+} from '@/program/schedule';
 
 // UI-facing snapshot of the local database, in the shapes the design's logic
 // used. Repos (and the sync engine after a pull) call notifyDataChanged().
@@ -27,6 +32,8 @@ export interface Profile {
   ageYears: number | null;
   sex: Sex | null;
   activity: Activity | null;
+  /** THE OBJECTIVE — null until a trip is captured in onboarding. */
+  trip: TripConfig | null;
   onboardingComplete: boolean;
 }
 
@@ -120,15 +127,43 @@ function readProfile(): Profile | null {
     age_years: number | null;
     sex: string | null;
     activity: string | null;
+    trip_name: string | null;
+    trip_date: string | null;
+    trip_style: string | null;
+    trip_gain_ft: number | null;
+    trip_pack_lb: number | null;
+    trip_max_alt_ft: number | null;
     onboarding_complete: number;
   }>(
     // Prefer the synced/completed row — a lingering local epoch-seed row loses.
     `select * from user_profile where deleted_at is null
      order by onboarding_complete desc, updated_at desc limit 1`,
   );
-  if (!r) return null;
+  if (!r) {
+    configureSchedule(null);
+    return null;
+  }
   const hasMaxes =
     r.squat_max_lb != null && r.deadlift_max_lb != null && r.press_max_lb != null && r.row_max_lb != null;
+  const hasTrip =
+    r.trip_name != null ||
+    r.trip_date != null ||
+    r.trip_style != null ||
+    r.trip_gain_ft != null ||
+    r.trip_pack_lb != null ||
+    r.trip_max_alt_ft != null;
+  const trip: TripConfig | null = hasTrip
+    ? {
+        name: r.trip_name,
+        date: r.trip_date,
+        style: (r.trip_style as TripStyle | null) ?? null,
+        biggestDayGainFt: r.trip_gain_ft,
+        packWeightLb: r.trip_pack_lb,
+        maxAltitudeFt: r.trip_max_alt_ft,
+      }
+    : null;
+  // Every profile read keeps the program calendar pointed at the saved trip.
+  configureSchedule(trip);
   return {
     bodyweightLb: r.bodyweight_lb,
     experience: r.experience as Experience,
@@ -146,8 +181,16 @@ function readProfile(): Profile | null {
     ageYears: r.age_years,
     sex: (r.sex as Sex | null) ?? null,
     activity: (r.activity as Activity | null) ?? null,
+    trip,
     onboardingComplete: r.onboarding_complete === 1,
   };
+}
+
+/** Configure the calendar from the saved profile outside any React snapshot —
+ *  boot code (the Saturday-ruck notification) reads the schedule before the
+ *  first useAppData() render. */
+export function initSchedule(): void {
+  readProfile();
 }
 
 // Per-exercise log history, newest first. suggestForExercise picks the last

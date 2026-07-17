@@ -11,18 +11,8 @@ import { diffColor, TRAILS, type Trail } from '@/data/trails';
 import { realTrailProfile, topo, trailProfile, trailRoute } from '@/lib/geometry';
 import { saveWorkoutToHealth } from '@/lib/health';
 import { getTrailheadWeather, weatherLine, type WeatherResult } from '@/lib/weather';
-import {
-  fmtShort,
-  keyOf,
-  nextSaturday,
-  PHASE_GAIN_FT,
-  PHASE_HOURS,
-  PHASE_PACK_LB,
-  phaseOf,
-  PROGRAM_WEEKS,
-  startDate,
-  targetGain,
-} from '@/program/schedule';
+import { clampedWeekOf, fmtShort, keyOf, nextSaturday, targetGain } from '@/program/schedule';
+import { ruckRx } from '@/program/trip';
 
 type FilterKey = 'dist' | 'gain' | 'drive';
 type Filters = Record<FilterKey, string>;
@@ -82,11 +72,8 @@ export function TrailsTab({ data }: { data: AppData }) {
 
   const satDate = nextSaturday();
   const satKey = keyOf(satDate);
-  const satWeek = Math.max(
-    1,
-    Math.min(PROGRAM_WEEKS, Math.floor((satDate.getTime() - startDate().getTime()) / 604800000) + 1),
-  );
-  const satPhaseIdx = phaseOf(satWeek).idx;
+  const satWeek = clampedWeekOf(satDate);
+  const rx = ruckRx(satWeek);
   const satDone = !!data.completions[satKey];
 
   const tgt = targetGain(satWeek);
@@ -230,8 +217,8 @@ export function TrailsTab({ data }: { data: AppData }) {
           <Text style={styles.satDate}>SAT · {fmtShort(satDate)}</Text>
         </View>
         <Text style={styles.satRx}>
-          {PHASE_PACK_LB[satPhaseIdx]} LB RUCK · {PHASE_HOURS[satPhaseIdx].toUpperCase()} ·{' '}
-          {PHASE_GAIN_FT[satPhaseIdx]} FT GAIN
+          {rx.packLb} LB RUCK · {rx.hours.toUpperCase()} · {rx.gainFt.toLocaleString('en-US')} FT
+          GAIN
         </Text>
         {wx && (
           <Text style={styles.satWx}>

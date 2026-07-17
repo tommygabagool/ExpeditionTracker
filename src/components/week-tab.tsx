@@ -20,8 +20,11 @@ import {
   dateOf,
   fmtShort,
   isDeloadWeek,
+  isTaperWeek,
   keyOf,
   phaseOf,
+  programWeeks,
+  startDate,
   todayDate,
 } from '@/program/schedule';
 
@@ -31,10 +34,12 @@ interface Props {
   onChangeWeek: (week: number) => void;
 }
 
-export function WeekTab({ data, week, onChangeWeek }: Props) {
+export function WeekTab({ data, week: weekSel, onChangeWeek }: Props) {
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
   const [wtInput, setWtInput] = useState('');
 
+  // A trip edit can shrink the program under a selected week — clamp on render.
+  const week = Math.max(1, Math.min(weekSel, programWeeks()));
   const phase = phaseOf(week);
   const selStart = dateOf(week, 0);
   const selEnd = dateOf(week, 6);
@@ -92,15 +97,19 @@ export function WeekTab({ data, week, onChangeWeek }: Props) {
         <View style={{ alignItems: 'center' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={[styles.weekTitle, { color: phase.color }]}>
-              WEEK {String(week).padStart(2, '0')}/26
+              WEEK {String(week).padStart(2, '0')}/{String(programWeeks()).padStart(2, '0')}
             </Text>
-            {isDeloadWeek(week) && <Text style={styles.deloadPill}>DELOAD</Text>}
+            {isTaperWeek(week) ? (
+              <Text style={styles.deloadPill}>TAPER</Text>
+            ) : isDeloadWeek(week) ? (
+              <Text style={styles.deloadPill}>DELOAD</Text>
+            ) : null}
           </View>
           <Text style={styles.weekSub}>
             {phase.name} · {fmtShort(selStart)}–{fmtShort(selEnd)}
           </Text>
         </View>
-        <Pressable onPress={() => onChangeWeek(Math.min(26, week + 1))} style={styles.navBtn}>
+        <Pressable onPress={() => onChangeWeek(Math.min(programWeeks(), week + 1))} style={styles.navBtn}>
           <Text style={styles.navGlyph}>›</Text>
         </Pressable>
       </View>
@@ -202,10 +211,10 @@ export function WeekTab({ data, week, onChangeWeek }: Props) {
             <Circle key={i} cx={p.x} cy={p.y} r={3} fill={palette.gold} stroke={palette.bg} strokeWidth={1.5} />
           ))}
           <SvgText x={34} y={186} fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
-            JUL 05
+            {fmtShort(startDate())}
           </SvgText>
           <SvgText x={360} y={186} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
-            JAN 02
+            {fmtShort(dateOf(programWeeks(), 6))}
           </SvgText>
         </Svg>
 

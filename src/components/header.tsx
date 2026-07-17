@@ -4,7 +4,7 @@ import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import { Logo } from '@/components/logo';
 import { FontFamily, palette } from '@/constants/theme';
 import { ridge, segPaths } from '@/lib/geometry';
-import { currentWeek, phaseOf } from '@/program/schedule';
+import { currentWeek, phaseEnds, phaseOf } from '@/program/schedule';
 
 interface Props {
   badgeCountLine: string;
@@ -31,9 +31,10 @@ export function Header({
 }: Props) {
   const week = currentWeek();
   const pts = ridge();
-  const s1 = segPaths(pts, 0, 9);
-  const s2 = segPaths(pts, 9, 18);
-  const s3 = segPaths(pts, 18, 26);
+  const [baseEnd, loadEnd, weeks] = phaseEnds();
+  const s1 = segPaths(pts, 0, baseEnd);
+  const s2 = segPaths(pts, baseEnd, loadEnd);
+  const s3 = segPaths(pts, loadEnd, weeks);
   const nowPt = pts[week - 1];
 
   return (
@@ -77,7 +78,7 @@ export function Header({
         </Pressable>
       </View>
 
-      {/* Ridgeline: 26 weeks as elevation profile */}
+      {/* Ridgeline: the program's weeks as an elevation profile */}
       <Svg viewBox="0 0 390 140" style={styles.ridge}>
         {[34, 64, 94].map((y) => (
           <Line key={y} x1={15} y1={y} x2={375} y2={y} stroke={palette.line} strokeWidth={1} strokeDasharray="2 5" />

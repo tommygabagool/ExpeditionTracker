@@ -1,9 +1,11 @@
 import type { AppData } from '@/data/store';
 import { GOAL_WEIGHT_LB, START_WEIGHT_LB } from './goals';
-import { DELOAD_WEEKS, weekOfKey } from './schedule';
+import { deloadWeeks, phaseLen, phaseOf, programWeeks, weekOfKey } from './schedule';
 
 // Achievement system ported verbatim from the design file. Badges are derived
 // from logged data; earn dates persist in earned_badges (see app root).
+// Phase and deload goals track the live calendar — the BADGE_DEFS literals
+// document the stock 26-week program and are overridden in computeBadges.
 
 export const ICONS: Record<string, string[]> = {
   mountain: ['M4 40 L18 14 L26 26 L32 18 L44 40 Z', 'M18 14 L22 20', 'M32 18 L29 23'],
@@ -122,9 +124,7 @@ function metrics(data: AppData) {
   const phaseDone = [0, 0, 0];
   doneKeys.forEach((k) => {
     const w = weekOfKey(k);
-    if (w >= 1 && w <= 9) phaseDone[0]++;
-    else if (w >= 10 && w <= 18) phaseDone[1]++;
-    else if (w >= 19 && w <= 26) phaseDone[2]++;
+    if (w >= 1 && w <= programWeeks()) phaseDone[phaseOf(w).idx]++;
   });
   const sorted = [...data.weights].sort((a, b) => (a.date < b.date ? -1 : 1));
   let maxLost = 0,
@@ -140,9 +140,11 @@ function metrics(data: AppData) {
     if (lb20 == null && lost >= 20) lb20 = e.date;
     if (goalWhen == null && e.lb <= GOAL_WEIGHT_LB) goalWhen = e.date;
   });
-  const deloadRespected = DELOAD_WEEKS.filter((w) => (byWeek[w] || 0) >= 5).length;
-  const ruck3h = ruckKeys.some((k) => weekOfKey(k) >= 10);
-  const ruck3hWhen = ruck3h ? (ruckKeys.find((k) => weekOfKey(k) >= 10) ?? null) : null;
+  const deloadRespected = deloadWeeks().filter((w) => (byWeek[w] || 0) >= 5).length;
+  // A 3-hour ruck = any ruck from LOAD CAMP on (prescriptions reach 3-5 h).
+  const isLoadRuck = (k: string) => phaseOf(weekOfKey(k)).idx >= 1;
+  const ruck3h = ruckKeys.some(isLoadRuck);
+  const ruck3hWhen = ruck3h ? (ruckKeys.find(isLoadRuck) ?? null) : null;
   const calStreak = longestRun(Object.keys(data.calories));
   return {
     sessions,
@@ -174,6 +176,14 @@ export interface BadgeComputed extends BadgeDef {
 export function computeBadges(data: AppData): BadgeComputed[] {
   const m = metrics(data);
   return BADGE_DEFS.map((def) => {
+    // Rescale calendar-shaped goals to the live (possibly trip-anchored)
+    // calendar; every other goal is fixed.
+    const goal =
+      def.kind === 'phase'
+        ? phaseLen(def.phase!) * 7
+        : def.kind === 'deload'
+          ? deloadWeeks().length
+          : def.goal;
     let cur = 0;
     let when: string | null = null;
     switch (def.kind) {
@@ -212,11 +222,12 @@ export function computeBadges(data: AppData): BadgeComputed[] {
         cur = m.calStreak;
         break;
     }
-    const earned = cur >= def.goal;
+    const earned = cur >= goal;
     return {
       ...def,
+      goal,
       iconPaths: ICONS[def.icon],
-      cur: Math.min(cur, def.goal),
+      cur: Math.min(cur, goal),
       earned,
       when: earned ? when : null,
     };

@@ -3,17 +3,8 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { TRAILS } from '@/data/trails';
-import {
-  keyOf,
-  nextSaturday,
-  PHASE_GAIN_FT,
-  PHASE_HOURS,
-  PHASE_PACK_LB,
-  phaseOf,
-  PROGRAM_WEEKS,
-  startDate,
-  targetGain,
-} from '@/program/schedule';
+import { clampedWeekOf, isTaperWeek, keyOf, nextSaturday, targetGain } from '@/program/schedule';
+import { ruckRx } from '@/program/trip';
 import { getTrailheadWeather, weatherLine } from '@/lib/weather';
 
 // The smart Saturday-ruck notification: fires Saturday 06:30 with the day's
@@ -45,20 +36,17 @@ export async function syncSaturdayRuckNotification(): Promise<void> {
     if (fireAt.getTime() <= Date.now()) return; // Saturday morning already past
 
     const satKey = keyOf(sat);
-    const satWeek = Math.max(
-      1,
-      Math.min(PROGRAM_WEEKS, Math.floor((sat.getTime() - startDate().getTime()) / 604800000) + 1),
-    );
-    const idx = phaseOf(satWeek).idx;
+    const satWeek = clampedWeekOf(sat);
+    const rx = ruckRx(satWeek);
     const trail = TRAILS.reduce((best, t) =>
       Math.abs(t.gain - targetGain(satWeek)) < Math.abs(best.gain - targetGain(satWeek)) ? t : best,
     );
 
     const wx = await getTrailheadWeather(trail, satKey);
-    const rx = `${PHASE_PACK_LB[idx]} LB · ${PHASE_HOURS[idx].toUpperCase()} · ${PHASE_GAIN_FT[idx]} FT GAIN`;
+    const rxLine = `${rx.packLb} LB · ${rx.hours.toUpperCase()} · ${rx.gainFt.toLocaleString('en-US')} FT GAIN`;
     const body = wx
-      ? `${rx}\n${trail.name} — ${weatherLine(wx.weather)}${wx.stale ? ' (CACHED)' : ''}`
-      : `${rx}\n${trail.name} — no forecast cached, check conditions.`;
+      ? `${rxLine}\n${trail.name} — ${weatherLine(wx.weather)}${wx.stale ? ' (CACHED)' : ''}`
+      : `${rxLine}\n${trail.name} — no forecast cached, check conditions.`;
 
     // Replace last week's (or an earlier-fetched) notification.
     try {
@@ -71,7 +59,7 @@ export async function syncSaturdayRuckNotification(): Promise<void> {
 
     const id = await Notifications.scheduleNotificationAsync({
       content: {
-        title: `SATURDAY RUCK · WEEK ${satWeek}`,
+        title: `SATURDAY RUCK · WEEK ${satWeek}${isTaperWeek(satWeek) ? ' · TAPER' : ''}`,
         body,
         sound: 'default',
       },

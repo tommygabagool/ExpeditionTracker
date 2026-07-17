@@ -19,7 +19,7 @@ import { suggestForExercise, type ExerciseLogEntry, type Suggestion } from '@/pr
 import { infoFor, slugFor, type ExerciseInfo } from '@/program/exercise-library';
 import { platesPerSide, warmupRamp } from '@/program/loading';
 import { getWorkout } from '@/program/program';
-import { currentWeek, DAY_NAMES, fmtShort, isDeloadWeek, keyOf, phaseOf, todayDate } from '@/program/schedule';
+import { currentWeek, DAY_NAMES, fmtShort, isDeloadWeek, isTaperWeek, keyOf, phaseOf, todayDate } from '@/program/schedule';
 
 // Session Mode — the full-screen space a workout deserves. One exercise
 // ("pitch") at a time: field-guide figure and cues, warm-up ramp and plate
@@ -56,6 +56,7 @@ function repsLabel(suffix: string): string {
   if (suffix === '/side') return 'REPS / SIDE';
   if (suffix === 'm') return 'METERS';
   if (suffix === 's') return 'SECONDS';
+  if (suffix === 's/side') return 'SEC / SIDE';
   return 'REPS';
 }
 
@@ -77,6 +78,7 @@ export function SessionMode({ data, ascent, onExit }: Props) {
   const week = currentWeek();
   const phase = phaseOf(week);
   const deload = isDeloadWeek(week);
+  const taper = isTaperWeek(week);
   const workout = getWorkout(week, today.getDay());
 
   // Pitches + seeded set rows are frozen at session start: suggestions read
@@ -279,7 +281,7 @@ export function SessionMode({ data, ascent, onExit }: Props) {
           </Text>
           <Text style={[styles.topPhase, { color: phase.color }]}>
             {phase.name}
-            {deload ? ' · DELOAD' : ''}
+            {taper ? ' · TAPER' : deload ? ' · DELOAD' : ''}
           </Text>
         </View>
         <Text style={styles.elapsed}>{clock(elapsedSec)}</Text>
@@ -358,7 +360,11 @@ export function SessionMode({ data, ascent, onExit }: Props) {
               <Text style={styles.slab}>{p.name.toUpperCase()}</Text>
               {p.info && <Text style={styles.muscles}>{p.info.muscles}</Text>}
               {p.info && <Text style={styles.descText}>{p.info.description}</Text>}
-              {deload && p.target && <Text style={styles.deloadNote}>DELOAD — 2 SETS · KEEP IT LIGHT</Text>}
+              {deload && p.target && (
+                <Text style={styles.deloadNote}>
+                  {taper ? 'TAPER — 2 SETS · STAY SHARP' : 'DELOAD — 2 SETS · KEEP IT LIGHT'}
+                </Text>
+              )}
 
               {p.suggestion && (
                 <View style={styles.targetRow}>

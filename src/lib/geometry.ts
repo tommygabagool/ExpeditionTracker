@@ -1,8 +1,9 @@
 import { GOAL_WEIGHT_LB, START_WEIGHT_LB } from '@/program/goals';
-import { isDeloadWeek, startDate } from '@/program/schedule';
+import { isDeloadWeek, programWeeks, startDate } from '@/program/schedule';
 
-// Procedural SVG geometry ported verbatim from the design file: the 26-week
-// ridgeline, seeded topo contours + trail art, and the weight chart.
+// Procedural SVG geometry ported verbatim from the design file: the program
+// ridgeline (one node per week, however many the calendar holds), seeded topo
+// contours + trail art, and the weight chart.
 
 export interface RidgePoint {
   x: number;
@@ -11,12 +12,13 @@ export interface RidgePoint {
 }
 
 export function ridge(): RidgePoint[] {
+  const weeks = programWeeks();
   const pts: RidgePoint[] = [];
-  for (let i = 0; i < 26; i++) {
+  for (let i = 0; i < weeks; i++) {
     const week = i + 1;
-    const x = 15 + i * (360 / 25);
+    const x = 15 + i * (360 / (weeks - 1));
     const jag = ((i * 37) % 11) - 5;
-    let y = 112 - (i / 25) * 86 + jag;
+    let y = 112 - (i / (weeks - 1)) * 86 + jag;
     if (isDeloadWeek(week)) y += 9;
     pts.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, week });
   }
@@ -122,7 +124,7 @@ export function weightChart(entries: { date: string; lb: number }[]): WeightChar
   const goal = GOAL_WEIGHT_LB;
   const sorted = [...entries].sort((a, b) => (a.date < b.date ? -1 : 1));
   const start = startDate().getTime();
-  const span = 182 * 86400000;
+  const span = programWeeks() * 7 * 86400000;
   const lbs = sorted.map((e) => e.lb);
   const top = Math.max(START_WEIGHT_LB, ...lbs) + 3;
   const bot = goal - 5;

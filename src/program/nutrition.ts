@@ -1,12 +1,12 @@
 import { GOAL_WEIGHT_LB, CALORIE_TARGET, MAINTENANCE_CALORIES } from './goals';
-import { dateOf, PROGRAM_WEEKS, todayDate } from './schedule';
+import { dateOf, programWeeks, todayDate } from './schedule';
 
 // Fuel targets computed from the onboarding stats instead of the design's
 // frozen constants. Maintenance = Mifflin-St Jeor BMR × an activity factor
 // that already includes the program's six weekly sessions (the picker asks
 // about the rest of the day). The deficit is paced to reach GOAL_WEIGHT_LB by
-// the end of week 26 from the CURRENT logged weight, so falling behind widens
-// it and being ahead relaxes it — clamped to a sane band either way.
+// the program's final week from the CURRENT logged weight, so falling behind
+// widens it and being ahead relaxes it — clamped to a sane band either way.
 
 export type Sex = 'male' | 'female';
 export type Activity = 'desk' | 'active' | 'hard';
@@ -87,7 +87,7 @@ export function fuelPlan(stats: FuelStats | null): FuelPlan {
   const maintenance = round25(bmr * ACTIVITY_FACTOR[stats.activity]);
 
   const lbToGo = stats.weightLb - GOAL_WEIGHT_LB;
-  const end = dateOf(PROGRAM_WEEKS, 6);
+  const end = dateOf(programWeeks(), 6);
   const daysLeft = Math.max(1, Math.round((end.getTime() - todayDate().getTime()) / 86400000));
   const maintain = lbToGo <= 0 || daysLeft <= 1;
 

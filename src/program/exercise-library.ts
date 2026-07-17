@@ -480,6 +480,94 @@ export const EXERCISE_INFO: Record<string, ExerciseInfo> = {
     restSec: 90,
   },
 
+  // ---- Trip-style swap-ins (src/program/trip.ts) -----------------------------
+  'Dead Hang': {
+    id: 'dead_hang',
+    kind: 'accessory',
+    muscles: 'GRIP · FOREARMS · SHOULDERS',
+    description:
+      'Hanging from a bar with straight arms and packed shoulders — nothing but grip, breath and the clock.',
+    why: 'A technical route is a grip test spread over hours. Time under the bar builds the forearm endurance and shoulder integrity that jugs, axes and fixed lines demand.',
+    how: [
+      'Full grip over the bar, hands shoulder-width.',
+      'Pull the shoulders down away from the ears and lock them there.',
+      'Hang for the full time — body quiet, legs still.',
+    ],
+    cues: ['Shoulders packed, not shrugged', 'Crush the bar, breathe slow', 'Dead still — no swinging'],
+    faults: ['Hanging on the joints with loose shoulders', 'Regripping every few seconds', 'Holding your breath through the burn'],
+    safety: [
+      'Step off a box to a soft, planned landing — never drop from a failing grip.',
+      'Grip burn is the point; sharp shoulder or elbow pain ends the set.',
+    ],
+    figure: 'pull_up',
+    restSec: 90,
+  },
+  'Single-Leg Calf Raise': {
+    id: 'single_leg_calf_raise',
+    kind: 'accessory',
+    muscles: 'CALVES · ACHILLES · ANKLE CONTROL',
+    description:
+      'A full-range calf raise on one foot — heel dropping below the step, driving to full height, one side at a time.',
+    why: 'Edging and front-pointing load one calf at a time with the whole body on it. Single-leg work finds the strength gap between sides before a long pitch does.',
+    how: [
+      'Ball of one foot on an edge, the other foot hooked behind the ankle.',
+      'Drop the heel below the step for a full stretch.',
+      'Drive up as high as you can and pause one second.',
+      'Lower slow — three seconds down. All reps, then switch.',
+    ],
+    cues: ['Full stretch, full height', 'Pause at the top', 'No bouncing'],
+    faults: ['Rolling the ankle outward at the top', 'Short pumpy reps', 'Pushing through the support hand'],
+    safety: [
+      'Fingertips on a rail for balance only — the leg does all the lifting.',
+      'Ease into full depth over the first reps; cold Achilles hate surprises.',
+    ],
+    figure: 'calf_raise',
+    restSec: 90,
+  },
+  'Copenhagen Plank': {
+    id: 'copenhagen_plank',
+    kind: 'core',
+    muscles: 'ADDUCTORS · OBLIQUES · HIP',
+    description:
+      'A side plank with the top foot on a bench and the bottom leg free — the inner thigh holds the whole body in one line.',
+    why: 'Adductors keep the hips level when one foot is high on a rock step and the body is sideways to the slope. Weak inner thighs are the groin strain waiting at the crux.',
+    how: [
+      'Side plank on the forearm, top foot (or knee, to start) on a bench.',
+      'Lift the hips until ear, hip and ankle make one straight line.',
+      'Bottom leg hangs free. Hold the time, then switch sides.',
+    ],
+    cues: ['Squeeze the top leg into the bench', 'Hips tall — no sag', 'Breathe through the hold'],
+    faults: ['Hips dropping toward the floor', 'Rolling the chest open to the ceiling', 'Resting the bottom foot on the ground'],
+    safety: [
+      'Start from the knee (shorter lever) and earn the straight-leg version.',
+      'A pull high in the groin ends the set early — this one punishes overreach.',
+    ],
+    figure: 'plank',
+    restSec: 90,
+  },
+  'Suitcase Carry': {
+    id: 'suitcase_carry',
+    kind: 'carry',
+    muscles: 'OBLIQUES · GRIP · LATERAL CHAIN',
+    description:
+      'A farmer carry with all the weight in one hand — walking tall while the load tries to fold you sideways.',
+    why: 'A duffel in one hand and uneven ground underfoot is expedition life. One-sided load teaches the trunk to stay level when the weight refuses to balance.',
+    how: [
+      'One heavy dumbbell or kettlebell at your side.',
+      'Stand tall — shoulders level, no lean away from the load.',
+      'Walk the distance in controlled, even steps.',
+      'Set it down with a squat, swap hands, repeat.',
+    ],
+    cues: ['Shoulders level, spine tall', 'Ribs stacked over hips', 'Smooth heel-to-toe steps'],
+    faults: ['Leaning away from the bell', 'Hiking the loaded shoulder', 'Short shuffling steps'],
+    safety: [
+      'Clear your walking lane before you pick up.',
+      'If the trunk starts folding, the weight is too heavy — drop 10 lb, not your posture.',
+    ],
+    figure: 'farmer_carry',
+    restSec: 90,
+  },
+
   // ---- Cardio days ---------------------------------------------------------------
   'Incline Treadmill': {
     id: 'incline_treadmill',

@@ -16,8 +16,10 @@ import {
   DAY_NAMES,
   fmtShort,
   isDeloadWeek,
+  isTaperWeek,
   keyOf,
   phaseOf,
+  programWeeks,
   todayDate,
 } from '@/program/schedule';
 
@@ -40,6 +42,7 @@ export function TodayTab({ data, badges, ascent, onOpenSummit, onStartSession }:
   const workout = getWorkout(week, dow);
   const done = !!data.completions[todayKey];
   const deload = isDeloadWeek(week);
+  const taper = isTaperWeek(week);
 
   const locked = badges.filter((b) => !b.earned);
   const next = [...locked].sort((a, b) => b.cur / b.goal - a.cur / a.goal)[0] || badges[0];
@@ -76,19 +79,26 @@ export function TodayTab({ data, badges, ascent, onOpenSummit, onStartSession }:
         <View style={styles.cardHead}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.dateLine}>
-              {DAY_NAMES[dow]} · {fmtShort(today)} · WK {String(week).padStart(2, '0')}/26
+              {DAY_NAMES[dow]} · {fmtShort(today)} · WK {String(week).padStart(2, '0')}/
+              {String(programWeeks()).padStart(2, '0')}
             </Text>
             <Text style={styles.workoutTitle}>{workout.title.toUpperCase()}</Text>
           </View>
           <View style={{ gap: 6, alignItems: 'flex-end' }}>
             <Text style={[styles.pill, { color: phase.color, borderColor: phase.color }]}>{phase.name}</Text>
-            {deload && <Text style={[styles.pill, { color: palette.gold, borderColor: palette.gold }]}>DELOAD</Text>}
+            {deload && (
+              <Text style={[styles.pill, { color: palette.gold, borderColor: palette.gold }]}>
+                {taper ? 'TAPER' : 'DELOAD'}
+              </Text>
+            )}
           </View>
         </View>
 
         {deload && (
           <Text style={styles.deloadNote}>
-            Deload week — cut all sets to 2, keep loads light, prioritize recovery.
+            {taper
+              ? 'Taper week — the fitness is banked. Cut sets to 2, keep loads light, arrive fresh.'
+              : 'Deload week — cut all sets to 2, keep loads light, prioritize recovery.'}
           </Text>
         )}
 
