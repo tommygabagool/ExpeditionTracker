@@ -16,11 +16,20 @@ export function useSession(): SessionStatus {
       return;
     }
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted) {
-        setStatus(data.session ? 'signedIn' : 'signedOut');
-      }
-    });
+    supabase.auth.getSession().then(
+      ({ data }) => {
+        if (mounted) {
+          setStatus(data.session ? 'signedIn' : 'signedOut');
+        }
+      },
+      () => {
+        // A rejected initial check must not leave the app gated on 'loading'
+        // forever — fall back to signed-out (Login/offline mode is reachable).
+        if (mounted) {
+          setStatus('signedOut');
+        }
+      },
+    );
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) {
         setStatus(session ? 'signedIn' : 'signedOut');

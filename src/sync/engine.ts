@@ -28,11 +28,18 @@ const PAGE_SIZE = 500;
 
 let syncing = false;
 
-export function enqueue(table: SyncedTable, row: Record<string, unknown>): void {
+/** Just the outbox insert — callers that need it atomic with a local write
+ *  (see data/repos.ts's write()) wrap this alongside upsertLocal in one
+ *  db.withTransactionSync so a crash between the two can't drop the write. */
+export function enqueueLocal(table: SyncedTable, row: Record<string, unknown>): void {
   db.runSync(
     'insert into outbox (table_name, row_id, payload, queued_at) values (?, ?, ?, ?)',
     [table, String(row.id), JSON.stringify(row), new Date().toISOString()],
   );
+}
+
+export function enqueue(table: SyncedTable, row: Record<string, unknown>): void {
+  enqueueLocal(table, row);
   void syncNow();
 }
 
@@ -40,16 +47,20 @@ export async function syncNow(): Promise<void> {
   if (syncing || !supabase) {
     return;
   }
-  const { data } = await supabase.auth.getSession();
-  if (!data.session) {
-    return;
-  }
-  const net = await NetInfo.fetch();
-  if (!net.isConnected) {
-    return;
-  }
+  // Set before the first await: enqueue() fires this fire-and-forget on every
+  // local write, and two writes in the same tick (e.g. logHike's completion
+  // write right after its own) must not both slip past the guard while it
+  // waits on getSession()/NetInfo.fetch().
   syncing = true;
   try {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      return;
+    }
+    const net = await NetInfo.fetch();
+    if (!net.isConnected) {
+      return;
+    }
     await pushOutbox();
     await pullAll();
     notifyDataChanged();

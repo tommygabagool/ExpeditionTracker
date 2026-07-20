@@ -155,7 +155,7 @@ export async function getRecovery(): Promise<Recovery | null> {
 
 /** Write a just-finished session back to Health as a workout ending now. */
 export async function saveWorkoutToHealth(
-  kind: 'strength' | 'ruck',
+  kind: 'strength' | 'cardio' | 'ruck',
   durationSec: number,
 ): Promise<void> {
   const m = hk();
@@ -164,14 +164,13 @@ export async function saveWorkoutToHealth(
   try {
     const end = new Date();
     const start = new Date(end.getTime() - durationSec * 1000);
-    await m.saveWorkoutSample(
+    const activityType =
       kind === 'ruck'
         ? m.WorkoutActivityType.hiking
-        : m.WorkoutActivityType.traditionalStrengthTraining,
-      [],
-      start,
-      end,
-    );
+        : kind === 'cardio'
+          ? m.WorkoutActivityType.other
+          : m.WorkoutActivityType.traditionalStrengthTraining;
+    await m.saveWorkoutSample(activityType, [], start, end);
   } catch {
     // Write denied or Health unavailable — the in-app log is the record.
   }

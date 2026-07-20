@@ -8,7 +8,7 @@ import type { Anchor, Equipment, Experience } from '@/program/lifts';
 import type { Activity, Sex } from '@/program/nutrition';
 import { configureSchedule, type TripConfig } from '@/program/schedule';
 import { START_WEIGHT_LB } from '@/program/goals';
-import { enqueue } from '@/sync/engine';
+import { enqueueLocal, syncNow } from '@/sync/engine';
 import type { Trail } from './trails';
 
 // All writes go through here — SQLite first, then the outbox, then a store
@@ -17,20 +17,49 @@ import type { Trail } from './trails';
 const nowIso = () => new Date().toISOString();
 
 function write(table: SyncedTable, row: Record<string, unknown>): void {
-  upsertLocal(table, row);
-  enqueue(table, row);
+  // Atomic: a process kill between the local write and the outbox insert
+  // must never leave one committed without the other.
+  db.withTransactionSync(() => {
+    upsertLocal(table, row);
+    enqueueLocal(table, row);
+  });
+  void syncNow();
   notifyDataChanged();
 }
 
+/** Deterministic id for a natural-key row: same seed -> same id, so two
+ *  offline devices (or a fresh install racing the initial pull) that create
+ *  a row for the same natural key land on identical ids instead of colliding
+ *  on push — the server upsert resolves conflicts on this primary key, not
+ *  the table's separate natural-key unique constraint. Only used as the
+ *  fallback when no local row exists yet; an already-synced row keeps
+ *  whatever id it already has. Fine under this app's single-user scope (see
+ *  the migrations' "single user today" note) — a second real account would
+ *  need user_id folded into the seed too. */
+function deriveId(seed: string): string {
+  const fnv = (salt: string) => {
+    let h = 0x811c9dc5 ^ salt.length;
+    const s = salt + seed;
+    for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
+    return (h >>> 0).toString(16).padStart(8, '0');
+  };
+  const hex = fnv('a') + fnv('b') + fnv('c') + fnv('d');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+}
+
 /** Reuse the row id for a natural key so re-logging never duplicates. */
-function existingId(sql: string, param: string): string {
+function existingId(sql: string, param: string, seed: string): string {
   const row = db.getFirstSync<{ id: string }>(sql, [param]);
-  return row?.id ?? Crypto.randomUUID();
+  return row?.id ?? deriveId(seed);
 }
 
 export function completeWorkout(dateKey: string, details: object = {}): void {
   write('workout_completions', {
-    id: existingId('select id from workout_completions where workout_date = ?', dateKey),
+    id: existingId(
+      'select id from workout_completions where workout_date = ?',
+      dateKey,
+      `workout_completions:${dateKey}`,
+    ),
     workout_date: dateKey,
     program_version: 1,
     details,
@@ -60,7 +89,11 @@ export function uncompleteWorkout(dateKey: string): void {
 
 export function logWeight(dateKey: string, weightLbs: number): void {
   write('weight_entries', {
-    id: existingId('select id from weight_entries where measured_on = ?', dateKey),
+    id: existingId(
+      'select id from weight_entries where measured_on = ?',
+      dateKey,
+      `weight_entries:${dateKey}`,
+    ),
     measured_on: dateKey,
     weight_lbs: weightLbs,
     updated_at: nowIso(),
@@ -74,10 +107,33 @@ export function setDailyCalories(dateKey: string, calories: number): void {
     id: existingId(
       'select id from calorie_entries where logged_on = ? and deleted_at is null',
       dateKey,
+      `calorie_entries:${dateKey}`,
     ),
     logged_on: dateKey,
     label: null,
     calories,
+    protein_g: null,
+    carbs_g: null,
+    fat_g: null,
+    updated_at: nowIso(),
+    deleted_at: null,
+  });
+}
+
+/** Add to today's calorie total atomically: reads the current SQLite value
+ *  and writes the sum in one call, so two rapid taps on "+ ADD" (a double
+ *  tap landing before the parent re-renders with the updated total prop)
+ *  can't both add against the same stale total and clobber one another. */
+export function addDailyCalories(dateKey: string, delta: number): void {
+  const existing = db.getFirstSync<{ id: string; calories: number }>(
+    'select id, calories from calorie_entries where logged_on = ? and deleted_at is null',
+    [dateKey],
+  );
+  write('calorie_entries', {
+    id: existing?.id ?? deriveId(`calorie_entries:${dateKey}`),
+    logged_on: dateKey,
+    label: null,
+    calories: (existing?.calories ?? 0) + delta,
     protein_g: null,
     carbs_g: null,
     fat_g: null,
@@ -196,7 +252,7 @@ export function awardBadge(badgeKey: string, earnedOnKey?: string): void {
     return;
   }
   write('earned_badges', {
-    id: Crypto.randomUUID(),
+    id: deriveId(`earned_badges:${badgeKey}`),
     badge_key: badgeKey,
     earned_at: earnedOnKey ? earnedOnKey + 'T00:00:00.000Z' : nowIso(),
     updated_at: nowIso(),
@@ -207,7 +263,11 @@ export function awardBadge(badgeKey: string, earnedOnKey?: string): void {
 /** Logging a hike also marks that day's workout complete (design behavior). */
 export function logHike(trail: Trail, dateKey: string): void {
   write('hike_logs', {
-    id: existingId('select id from hike_logs where hiked_on = ?', dateKey),
+    id: existingId(
+      'select id from hike_logs where hiked_on = ?',
+      dateKey,
+      `hike_logs:${dateKey}`,
+    ),
     trail_id: trail.id,
     name: trail.name,
     hiked_on: dateKey,
@@ -240,11 +300,15 @@ export interface ProfileInput {
 
 function profileId(): string {
   // Prefer the synced/completed profile row so saves update it rather than
-  // racing the server's unique(user_id) with a second id.
+  // racing the server's unique(user_id) with a second id. The fallback is
+  // deterministic (not a fresh random uuid): a fresh install saving onboarding
+  // before the initial pull has downloaded a pre-existing server profile must
+  // land on the SAME id that profile already has, or the push collides with
+  // the server's unique(user_id) on a mismatched id and wedges the sync loop.
   const row = db.getFirstSync<{ id: string }>(
     'select id from user_profile order by onboarding_complete desc, updated_at desc limit 1',
   );
-  return row?.id ?? Crypto.randomUUID();
+  return row?.id ?? deriveId('user_profile:singleton');
 }
 
 export function saveProfile(input: ProfileInput, onboardingComplete = true): void {
@@ -342,7 +406,7 @@ export function logExerciseSets(p: {
     [p.logDate, p.exerciseId],
   );
   write('exercise_logs', {
-    id: existing?.id ?? Crypto.randomUUID(),
+    id: existing?.id ?? deriveId(`exercise_logs:${p.logDate}:${p.exerciseId}`),
     log_date: p.logDate,
     exercise_id: p.exerciseId,
     exercise_name: p.exerciseName,

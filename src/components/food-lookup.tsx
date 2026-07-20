@@ -1,8 +1,8 @@
-import { useMemo, useState, type ComponentType } from 'react';
+import { useMemo, useRef, useState, type ComponentType } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { FontFamily, palette } from '@/constants/theme';
-import { saveMyFoodUse, searchMyFoods, setDailyCalories, type MyFood } from '@/data/repos';
+import { addDailyCalories, saveMyFoodUse, searchMyFoods, type MyFood } from '@/data/repos';
 import { lookupBarcode, searchFoods, type FoodHit } from '@/lib/food-api';
 
 type ScannerProps = { onScanned: (code: string) => void; onClose: () => void };
@@ -55,11 +55,9 @@ const fromMyFood = (f: MyFood): Pick => ({
 
 interface Props {
   todayKey: string;
-  /** Today's logged total so far (null when nothing logged yet). */
-  currentTotal: number | null;
 }
 
-export function FoodLookup({ todayKey, currentTotal }: Props) {
+export function FoodLookup({ todayKey }: Props) {
   const [query, setQuery] = useState('');
   const [remote, setRemote] = useState<FoodHit[]>([]);
   const [busy, setBusy] = useState(false);
@@ -67,6 +65,10 @@ export function FoodLookup({ todayKey, currentTotal }: Props) {
   const [scanMsg, setScanMsg] = useState<string | null>(null);
   const [picked, setPicked] = useState<Pick | null>(null);
   const [kcalEdit, setKcalEdit] = useState('');
+  // Bumped on every search and on every keystroke so a slow/stale response
+  // (query changed, or a second search fired, while the first was in flight)
+  // can never overwrite results that no longer match what's on screen.
+  const searchToken = useRef(0);
 
   // SQLite is synchronous and tiny here — recompute per keystroke.
   const mine = useMemo(() => searchMyFoods(query), [query]);
@@ -80,7 +82,9 @@ export function FoodLookup({ todayKey, currentTotal }: Props) {
   const runSearch = async () => {
     if (query.trim().length < 2 || busy) return;
     setBusy(true);
-    setRemote(await searchFoods(query));
+    const token = ++searchToken.current;
+    const hits = await searchFoods(query);
+    if (searchToken.current === token) setRemote(hits);
     setBusy(false);
   };
 
@@ -110,7 +114,7 @@ export function FoodLookup({ todayKey, currentTotal }: Props) {
     if (!picked) return;
     const kcal = parseInt(kcalEdit, 10);
     if (!kcal || kcal < 1 || kcal > 5000) return;
-    setDailyCalories(todayKey, (currentTotal ?? 0) + kcal);
+    addDailyCalories(todayKey, kcal);
     saveMyFoodUse({ ...picked, kcal });
     setPicked(null);
     setQuery('');
@@ -134,6 +138,7 @@ export function FoodLookup({ todayKey, currentTotal }: Props) {
           onChangeText={(t) => {
             setQuery(t);
             setRemote([]);
+            searchToken.current++;
           }}
           onSubmitEditing={runSearch}
           placeholder="Search foods…"

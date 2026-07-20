@@ -81,16 +81,23 @@ function computeStreak(completions: Record<string, boolean>): { streak: number; 
   return { streak, shielded: shielded && streak > 0 };
 }
 
+/** Same deload-shielding rule as computeStreak (a skipped deload-week day
+ *  holds the streak instead of breaking it), walked forward over the whole
+ *  program so far and tracking the running max — otherwise a shielded
+ *  current streak could read as longer than the "best" ever recorded. */
 function computeBestStreak(completions: Record<string, boolean>): number {
-  const days = Object.keys(completions)
-    .filter((k) => completions[k])
-    .map((k) => Math.floor(new Date(k + 'T00:00:00').getTime() / DAY_MS))
-    .sort((a, b) => a - b);
+  const start = new Date(PROGRAM_START + 'T00:00:00');
+  const end = todayDate();
   let best = 0;
-  let run = 0;
-  for (let i = 0; i < days.length; i++) {
-    run = i > 0 && days[i] === days[i - 1] + 1 ? run + 1 : 1;
-    if (run > best) best = run;
+  let streak = 0;
+  for (let cursor = start.getTime(); cursor <= end.getTime(); cursor += DAY_MS) {
+    const key = keyOf(new Date(cursor));
+    if (completions[key]) {
+      streak++;
+    } else if (!isDeloadWeek(weekOfKey(key))) {
+      streak = 0;
+    }
+    if (streak > best) best = streak;
   }
   return best;
 }

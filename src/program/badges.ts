@@ -144,7 +144,7 @@ function metrics(data: AppData) {
   // A 3-hour ruck = any ruck from LOAD CAMP on (prescriptions reach 3-5 h).
   const isLoadRuck = (k: string) => phaseOf(weekOfKey(k)).idx >= 1;
   const ruck3h = ruckKeys.some(isLoadRuck);
-  const ruck3hWhen = ruck3h ? (ruckKeys.find(isLoadRuck) ?? null) : null;
+  const ruck3hWhen = ruck3h ? ([...ruckKeys].sort().find(isLoadRuck) ?? null) : null;
   const calStreak = longestRun(Object.keys(data.calories));
   return {
     sessions,

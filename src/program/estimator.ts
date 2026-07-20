@@ -72,10 +72,24 @@ export interface LastAttempt {
 export function attemptFrom(entry: ExerciseLogEntry): LastAttempt | null {
   const done = entry.sets.filter((s) => s.done);
   if (done.length === 0) return null;
-  const workingWeight = Math.max(...done.map((s) => s.weight));
-  const hitSets = done.filter((s) => s.reps >= entry.repTarget).length;
+  // Sets are prescribed at a single working weight; take whichever weight
+  // most sets were actually done at (ties favor the higher weight) so one
+  // mis-keyed or deliberately off-weight set — a heavier top single, a
+  // lighter back-off — can't stand in for the day's real working weight.
+  const counts = new Map<number, number>();
+  for (const s of done) counts.set(s.weight, (counts.get(s.weight) ?? 0) + 1);
+  let workingWeight = done[0].weight;
+  let bestCount = 0;
+  for (const [weight, count] of counts) {
+    if (count > bestCount || (count === bestCount && weight > workingWeight)) {
+      workingWeight = weight;
+      bestCount = count;
+    }
+  }
+  const atWorkingWeight = done.filter((s) => s.weight === workingWeight);
+  const hitSets = atWorkingWeight.filter((s) => s.reps >= entry.repTarget).length;
   const prescribed = entry.repTarget * entry.setTarget;
-  const total = done.reduce((acc, s) => acc + s.reps, 0);
+  const total = atWorkingWeight.reduce((acc, s) => acc + s.reps, 0);
   return {
     workingWeight,
     hitAll: hitSets >= entry.setTarget,

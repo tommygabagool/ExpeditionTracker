@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FontFamily, palette } from '@/constants/theme';
@@ -16,12 +16,32 @@ interface Props {
 
 export function BarcodeScanner({ onScanned, onClose }: Props) {
   const [perm, requestPerm] = useCameraPermissions();
+  // One auto-request per scanner open: without this, a single Android denial
+  // (which commonly leaves canAskAgain true) re-triggers the effect on every
+  // resolved request and the OS dialog reappears in a loop. The ref gates
+  // re-entrancy synchronously inside the effect; the state (set once the
+  // request settles, not synchronously in the effect body) is what render
+  // below reads to tell "still asking" from "already asked, still denied".
+  const askedRef = useRef(false);
+  const [requested, setRequested] = useState(false);
+  // CameraView keeps firing onBarcodeScanned for as long as a code is in
+  // frame; without a lock, holding the phone steady fires duplicate lookups
+  // (setScanner(null) in the parent is an async state update, not an
+  // instant unmount).
+  const lockedRef = useRef(false);
 
   useEffect(() => {
-    if (perm && !perm.granted && perm.canAskAgain) {
-      requestPerm();
+    if (perm && !perm.granted && perm.canAskAgain && !askedRef.current) {
+      askedRef.current = true;
+      void requestPerm().finally(() => setRequested(true));
     }
   }, [perm, requestPerm]);
+
+  const handleScanned = (code: string) => {
+    if (lockedRef.current) return;
+    lockedRef.current = true;
+    onScanned(code);
+  };
 
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
@@ -30,13 +50,15 @@ export function BarcodeScanner({ onScanned, onClose }: Props) {
           <CameraView
             style={StyleSheet.absoluteFill}
             barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }}
-            onBarcodeScanned={(r) => onScanned(r.data)}
+            onBarcodeScanned={(r) => handleScanned(r.data)}
           />
         ) : (
           <Text style={styles.denied}>
             {perm && !perm.canAskAgain
               ? 'CAMERA ACCESS DENIED — ENABLE IT IN SETTINGS OR SEARCH BY NAME'
-              : 'REQUESTING CAMERA ACCESS…'}
+              : requested
+                ? 'CAMERA ACCESS DENIED — SEARCH BY NAME INSTEAD'
+                : 'REQUESTING CAMERA ACCESS…'}
           </Text>
         )}
         <Pressable onPress={onClose} style={styles.close}>

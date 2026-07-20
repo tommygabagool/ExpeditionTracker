@@ -24,10 +24,29 @@ export interface FoodHit {
 
 const SEARCH_TTL_MS = 7 * 86_400_000;
 const BARCODE_TTL_MS = 30 * 86_400_000;
+const NETWORK_TIMEOUT_MS = 10_000;
 
 interface CacheEntry<T> {
   at: number;
   value: T;
+}
+
+/** A stalled connection must not hang the caller forever — food-lookup.tsx
+ *  flips `busy` back off only when this settles. */
+function withTimeout<T>(p: Promise<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('food lookup timed out')), NETWORK_TIMEOUT_MS);
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (err) => {
+        clearTimeout(t);
+        reject(err);
+      },
+    );
+  });
 }
 
 async function cached<T>(key: string, ttlMs: number, miss: () => Promise<T>): Promise<T> {
@@ -40,7 +59,7 @@ async function cached<T>(key: string, ttlMs: number, miss: () => Promise<T>): Pr
   } catch {
     // Unreadable cache — fall through to the network.
   }
-  const value = await miss();
+  const value = await withTimeout(miss());
   await AsyncStorage.setItem(key, JSON.stringify({ at: Date.now(), value })).catch(() => {});
   return value;
 }

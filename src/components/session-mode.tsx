@@ -147,11 +147,14 @@ export function SessionMode({ data, ascent, onExit }: Props) {
     keepAwakeOn();
     ensureRestNotifications();
     const t = setInterval(() => setNow(Date.now()), 500);
-    const notif = restNotif.current;
     return () => {
       keepAwakeOff();
       clearInterval(t);
-      cancelRestDone(notif.id);
+      // Read restNotif.current at cleanup time, not a mount-time snapshot:
+      // setRestNotification() replaces .current with a new object on every
+      // set completion, so a captured reference here would always point at
+      // the original {id: null} and never actually cancel a pending notif.
+      cancelRestDone(restNotif.current.id);
     };
   }, []);
 
@@ -233,7 +236,7 @@ export function SessionMode({ data, ascent, onExit }: Props) {
         session: { durationSec: elapsedSec, volumeLb: Math.round(volume), setsDone },
       });
       // Mirror the session into Apple Health (no-op unless connected).
-      void saveWorkoutToHealth('strength', elapsedSec);
+      void saveWorkoutToHealth(workout.type, elapsedSec);
       successFx();
     }
     onExit();

@@ -173,7 +173,7 @@ export function FuelTab({ data }: { data: AppData }) {
         </View>
       </View>
 
-      <FoodLookup todayKey={todayKey} currentTotal={data.calories[todayKey] ?? null} />
+      <FoodLookup todayKey={todayKey} />
 
       <View style={styles.panel}>
         <Text style={styles.panelTitle}>FOOD GUIDE</Text>

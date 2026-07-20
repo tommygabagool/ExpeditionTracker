@@ -43,8 +43,12 @@ export function deriveCalendar(trip: TripConfig | null): DerivedCalendar {
   if (!end || isNaN(end.getTime())) {
     return { weeks: STOCK_PROGRAM_WEEKS, baseEnd: 9, loadEnd: 18, deloads: STOCK_DELOADS, taperWeek: null };
   }
-  // Same week math as weekOfKey, clamped to [8, 52] (52 = program_days check).
-  const raw = Math.floor((end.getTime() - startDate().getTime()) / 604800000) + 1;
+  // Last FULL week (Sun-Sat) that ends at or before the trip date — not the
+  // week merely containing it, or the taper week's tail (including the
+  // Saturday ruck) would fall after the user has already left. Clamped to
+  // [8, 52] (52 = program_days check).
+  const daysUntilTrip = Math.floor((end.getTime() - startDate().getTime()) / 86_400_000);
+  const raw = Math.floor((daysUntilTrip - 6) / 7) + 1;
   const weeks = Math.max(8, Math.min(52, raw));
   // Proportional phases — reproduces 9/18 at 26 weeks.
   const baseEnd = Math.round((weeks * 9) / 26);
