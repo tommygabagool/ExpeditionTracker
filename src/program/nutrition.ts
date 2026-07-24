@@ -1,4 +1,4 @@
-import { GOAL_WEIGHT_LB, CALORIE_TARGET, MAINTENANCE_CALORIES } from './goals';
+import { goalWeightLb, CALORIE_TARGET, MAINTENANCE_CALORIES } from './goals';
 import { dateOf, programWeeks, todayDate } from './schedule';
 
 // Fuel targets computed from the onboarding stats instead of the design's
@@ -57,7 +57,7 @@ const round5 = (x: number) => Math.round(x / 5) * 5;
 
 function macros(targetKcal: number): Pick<FuelPlan, 'proteinG' | 'carbsG' | 'fatG'> {
   // 1 g protein / lb of GOAL weight, ~30% of kcal from fat, carbs fill the rest.
-  const proteinG = round5(GOAL_WEIGHT_LB);
+  const proteinG = round5(goalWeightLb());
   const fatG = round5((targetKcal * 0.3) / 9);
   const carbsG = round5(Math.max(0, (targetKcal - proteinG * 4 - fatG * 9) / 4));
   return { proteinG, carbsG, fatG };
@@ -86,7 +86,7 @@ export function fuelPlan(stats: FuelStats | null): FuelPlan {
   const bmr = mifflinBmr(stats);
   const maintenance = round25(bmr * ACTIVITY_FACTOR[stats.activity]);
 
-  const lbToGo = stats.weightLb - GOAL_WEIGHT_LB;
+  const lbToGo = stats.weightLb - goalWeightLb();
   const end = dateOf(programWeeks(), 6);
   const daysLeft = Math.max(1, Math.round((end.getTime() - todayDate().getTime()) / 86400000));
   const maintain = lbToGo <= 0 || daysLeft <= 1;

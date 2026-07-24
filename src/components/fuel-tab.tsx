@@ -5,7 +5,7 @@ import { FoodLookup } from '@/components/food-lookup';
 import { FontFamily, palette } from '@/constants/theme';
 import { setDailyCalories } from '@/data/repos';
 import type { AppData } from '@/data/store';
-import { GOAL_WEIGHT_LB } from '@/program/goals';
+import { goalWeightLb } from '@/program/goals';
 import { fuelPlan, type FuelStats } from '@/program/nutrition';
 import { DAY_NAMES, fmtShort, keyOf, programWeeks, todayDate } from '@/program/schedule';
 
@@ -50,7 +50,7 @@ export function FuelTab({ data }: { data: AppData }) {
   const p = data.profile;
   const currentLb = data.weights.length
     ? data.weights[data.weights.length - 1].lb
-    : (p?.bodyweightLb ?? GOAL_WEIGHT_LB);
+    : (p?.bodyweightLb ?? goalWeightLb());
   const stats: FuelStats | null =
     p && p.heightIn && p.ageYears && p.sex && p.activity
       ? { weightLb: currentLb, heightIn: p.heightIn, ageYears: p.ageYears, sex: p.sex, activity: p.activity }
@@ -121,7 +121,7 @@ export function FuelTab({ data }: { data: AppData }) {
             ? 'DEFAULT TARGETS — ADD FUEL STATS IN CALIBRATION (BARBELL ICON)'
             : plan.maintain
               ? `AT GOAL — HOLDING ${currentLb.toFixed(0)} LB AT MAINTENANCE`
-              : `${currentLb.toFixed(1)} LB → ${GOAL_WEIGHT_LB} BY WK ${programWeeks()} · −${plan.lbPerWeek.toFixed(1)} LB/WK`}
+              : `${currentLb.toFixed(1)} LB → ${goalWeightLb()} BY WK ${programWeeks()} · −${plan.lbPerWeek.toFixed(1)} LB/WK`}
         </Text>
       </View>
 

@@ -1,4 +1,4 @@
-import { GOAL_WEIGHT_LB, START_WEIGHT_LB } from '@/program/goals';
+import { goalWeightLb, startWeightLb } from '@/program/goals';
 import { isDeloadWeek, programWeeks, startDate } from '@/program/schedule';
 
 // Procedural SVG geometry ported verbatim from the design file: the program
@@ -121,12 +121,12 @@ export interface WeightChart {
 }
 
 export function weightChart(entries: { date: string; lb: number }[]): WeightChart {
-  const goal = GOAL_WEIGHT_LB;
+  const goal = goalWeightLb();
   const sorted = [...entries].sort((a, b) => (a.date < b.date ? -1 : 1));
   const start = startDate().getTime();
   const span = programWeeks() * 7 * 86400000;
   const lbs = sorted.map((e) => e.lb);
-  const top = Math.max(START_WEIGHT_LB, ...lbs) + 3;
+  const top = Math.max(startWeightLb(), ...lbs) + 3;
   const bot = goal - 5;
   const X = (d: string) =>
     34 + Math.max(0, Math.min(1, (new Date(d + 'T00:00:00').getTime() - start) / span)) * 326;

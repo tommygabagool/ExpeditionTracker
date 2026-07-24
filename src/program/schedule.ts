@@ -7,9 +7,74 @@ import { palette } from '@/constants/theme';
 // final week becomes a taper. Must stay Node-safe: theme is the only import
 // (the seed scripts run this under tsx).
 
-export const PROGRAM_START = '2026-07-05'; // a Sunday; program weeks run Sun-Sat
 /** The stock calendar length — what the seeded program_days rows always hold. */
 export const STOCK_PROGRAM_WEEKS = 26;
+const STOCK_START = '2026-07-05'; // a Sunday; program weeks run Sun-Sat
+/** Default program start for the Node seed script; the app anchors per-user
+ *  off the enrollment start_date instead (see EnrollmentConfig). */
+export const PROGRAM_START = STOCK_START;
+
+// ---- enrollment (per-user program anchor) -----------------------------------
+// Week number, phase colors, deloads and goals used to be global module
+// constants. They now come from the signed-in user's enrollment, threaded in
+// via configureSchedule(); the STOCK_* values are the fallback before one is
+// loaded (and for the seed script).
+
+/** Tunable program shape — sourced from a programs row's `params` jsonb (the
+ *  versioned template), falling back to STOCK_PARAMS field by field. */
+export interface ProgramParams {
+  lengthWeeks: number;
+  baseEnd: number; // last BASE CAMP week
+  loadEnd: number; // last LOAD CAMP week
+  deloads: number[];
+  /** Multiplies the per-lift progression increment (1 = stock). */
+  progressionScale: number;
+}
+
+/** Per-user weight targets — replaces the START/GOAL_WEIGHT_LB constants. */
+export interface GoalParams {
+  startWeightLb: number;
+  goalWeightLb: number;
+}
+
+export interface EnrollmentConfig {
+  /** yyyy-mm-dd, the week-1 anchor. Replaces the global PROGRAM_START. */
+  startDate: string;
+  /** The pinned program version (programs.id), or null → in-code fallback. */
+  programId: string | null;
+  params: ProgramParams;
+  goals: GoalParams;
+}
+
+const STOCK_DELOADS = [5, 9, 14, 18, 23];
+export const STOCK_PARAMS: ProgramParams = {
+  lengthWeeks: STOCK_PROGRAM_WEEKS,
+  baseEnd: 9,
+  loadEnd: 18,
+  deloads: STOCK_DELOADS,
+  progressionScale: 1,
+};
+const STOCK_GOALS: GoalParams = { startWeightLb: 260, goalWeightLb: 230 };
+const STOCK_ENROLLMENT: EnrollmentConfig = {
+  startDate: STOCK_START,
+  programId: null,
+  params: STOCK_PARAMS,
+  goals: STOCK_GOALS,
+};
+
+/** Merge a programs.params jsonb value onto the stock defaults, field by field
+ *  (a template may set only some knobs). */
+export function parseProgramParams(raw: unknown): ProgramParams {
+  const p = raw && typeof raw === 'object' ? (raw as Partial<ProgramParams>) : {};
+  return {
+    lengthWeeks: typeof p.lengthWeeks === 'number' ? p.lengthWeeks : STOCK_PARAMS.lengthWeeks,
+    baseEnd: typeof p.baseEnd === 'number' ? p.baseEnd : STOCK_PARAMS.baseEnd,
+    loadEnd: typeof p.loadEnd === 'number' ? p.loadEnd : STOCK_PARAMS.loadEnd,
+    deloads: Array.isArray(p.deloads) ? p.deloads : STOCK_PARAMS.deloads,
+    progressionScale:
+      typeof p.progressionScale === 'number' ? p.progressionScale : STOCK_PARAMS.progressionScale,
+  };
+}
 
 // ---- trip objective ---------------------------------------------------------
 
@@ -17,7 +82,7 @@ export type TripStyle = 'trail' | 'technical' | 'expedition';
 
 export interface TripConfig {
   name: string | null;
-  /** yyyy-mm-dd. Defines the program END; null keeps the stock 26 weeks. */
+  /** yyyy-mm-dd. Defines the program END; null keeps the stock length. */
   date: string | null;
   style: TripStyle | null;
   biggestDayGainFt: number | null;
@@ -34,14 +99,17 @@ export interface DerivedCalendar {
   taperWeek: number | null;
 }
 
-const STOCK_DELOADS = [5, 9, 14, 18, 23];
+let enrollment: EnrollmentConfig = STOCK_ENROLLMENT;
+let currentTrip: TripConfig | null = null;
 
-/** Pure calendar derivation — exported so onboarding can preview a trip
- *  without touching module state. No/invalid trip date → the stock calendar. */
+/** Pure over module state — exported so onboarding can preview a trip. No/
+ *  invalid trip date → the enrollment's base calendar; otherwise the calendar
+ *  is re-anchored to end at the trip date. */
 export function deriveCalendar(trip: TripConfig | null): DerivedCalendar {
+  const p = enrollment.params;
   const end = trip?.date ? new Date(trip.date + 'T00:00:00') : null;
   if (!end || isNaN(end.getTime())) {
-    return { weeks: STOCK_PROGRAM_WEEKS, baseEnd: 9, loadEnd: 18, deloads: STOCK_DELOADS, taperWeek: null };
+    return { weeks: p.lengthWeeks, baseEnd: p.baseEnd, loadEnd: p.loadEnd, deloads: p.deloads, taperWeek: null };
   }
   // Last FULL week (Sun-Sat) that ends at or before the trip date — not the
   // week merely containing it, or the taper week's tail (including the
@@ -50,9 +118,9 @@ export function deriveCalendar(trip: TripConfig | null): DerivedCalendar {
   const daysUntilTrip = Math.floor((end.getTime() - startDate().getTime()) / 86_400_000);
   const raw = Math.floor((daysUntilTrip - 6) / 7) + 1;
   const weeks = Math.max(8, Math.min(52, raw));
-  // Proportional phases — reproduces 9/18 at 26 weeks.
-  const baseEnd = Math.round((weeks * 9) / 26);
-  const loadEnd = Math.round((weeks * 18) / 26);
+  // Proportional phases — reproduces the base 9/18 split at full length.
+  const baseEnd = Math.round((weeks * p.baseEnd) / p.lengthWeeks);
+  const loadEnd = Math.round((weeks * p.loadEnd) / p.lengthWeeks);
   // Week 5, then alternating +4/+5 gaps, never in the final two weeks —
   // reproduces [5, 9, 14, 18, 23] at 26.
   const deloads: number[] = [];
@@ -62,18 +130,41 @@ export function deriveCalendar(trip: TripConfig | null): DerivedCalendar {
   return { weeks, baseEnd, loadEnd, deloads, taperWeek: weeks };
 }
 
-let trip: TripConfig | null = null;
 let calendar: DerivedCalendar = deriveCalendar(null);
 
-/** Point the calendar at a trip (or back to stock). store.readProfile calls
- *  this on every profile read so the app and boot code see the saved trip. */
-export function configureSchedule(next: TripConfig | null): void {
-  trip = next;
-  calendar = deriveCalendar(next);
+/** Point the calendar at a user's enrollment (start + params + goals) and
+ *  trip, or back to stock. store.readProfile calls this on every profile read
+ *  so the app and boot code see the signed-in user's program. */
+export function configureSchedule(enr: EnrollmentConfig | null, trip: TripConfig | null): void {
+  enrollment = enr ?? STOCK_ENROLLMENT;
+  currentTrip = trip;
+  calendar = deriveCalendar(trip);
 }
 
 export function getTrip(): TripConfig | null {
-  return trip;
+  return currentTrip;
+}
+
+/** Active weight targets — read by goals.ts's accessors. */
+export function activeGoals(): GoalParams {
+  return enrollment.goals;
+}
+
+/** The pinned program version to read day content from (null → in-code
+ *  fallback / latest). Keeps a mid-program user on the version they started. */
+export function enrolledProgramId(): string | null {
+  return enrollment.programId;
+}
+
+/** Progression-increment multiplier for the active template (1 = stock). */
+export function progressionScale(): number {
+  return enrollment.params.progressionScale;
+}
+
+/** The week-1 anchor as a yyyy-mm-dd key (replaces the PROGRAM_START constant
+ *  at call sites that need the string form). */
+export function startDateKey(): string {
+  return enrollment.startDate;
 }
 
 export function programWeeks(): number {
@@ -125,7 +216,7 @@ export const PHASE_GAIN_FT = ['1,500', '2,500', '3,500'] as const;
 
 /** Long-day elevation target used to match trail suggestions. */
 export function targetGain(week: number): number {
-  const peak = trip?.biggestDayGainFt ?? 3500;
+  const peak = currentTrip?.biggestDayGainFt ?? 3500;
   let g = 500 + ((week - 1) * (peak - 500)) / (programWeeks() - 1);
   if (isDeloadWeek(week)) g *= 0.6;
   return g;
@@ -134,7 +225,8 @@ export function targetGain(week: number): number {
 // ---- calendar helpers (local time, like the design) ------------------------
 
 export function startDate(): Date {
-  return new Date(2026, 6, 5);
+  const [y, m, d] = enrollment.startDate.split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 
 export function todayDate(): Date {

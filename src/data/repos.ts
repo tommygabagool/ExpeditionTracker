@@ -1,13 +1,13 @@
 import * as Crypto from 'expo-crypto';
 
-import { notifyDataChanged } from '@/data/store';
+import { initSchedule, notifyDataChanged } from '@/data/store';
 import { db, upsertLocal, type SyncedTable } from '@/lib/db';
 import { syncSaturdayRuckNotification } from '@/lib/ruck-notify';
 import { anchorMaxes } from '@/program/estimator';
+import { DEFAULT_GOAL_WEIGHT_LB, DEFAULT_START_WEIGHT_LB } from '@/program/goals';
 import type { Anchor, Equipment, Experience } from '@/program/lifts';
 import type { Activity, Sex } from '@/program/nutrition';
-import { configureSchedule, type TripConfig } from '@/program/schedule';
-import { START_WEIGHT_LB } from '@/program/goals';
+import { type GoalParams, keyOf, todayDate, type TripConfig } from '@/program/schedule';
 import { enqueueLocal, syncNow } from '@/sync/engine';
 import type { Trail } from './trails';
 
@@ -15,6 +15,17 @@ import type { Trail } from './trails';
 // notification so the UI re-reads. Date keys are local-time yyyy-mm-dd.
 
 const nowIso = () => new Date().toISOString();
+const EPOCH_ISO = '1970-01-01T00:00:00.000Z';
+
+/** The Sunday on-or-before today, yyyy-mm-dd — the week-1 anchor for a new
+ *  enrollment. Program weeks run Sun–Sat, so anchoring to a Sunday keeps the
+ *  dateOf()/weekOfKey() calendar math aligned. */
+function weekAnchorKey(): string {
+  const t = todayDate();
+  const sun = new Date(t);
+  sun.setDate(sun.getDate() - t.getDay());
+  return keyOf(sun);
+}
 
 function write(table: SyncedTable, row: Record<string, unknown>): void {
   // Atomic: a process kill between the local write and the outbox insert
@@ -341,10 +352,42 @@ export function saveProfile(input: ProfileInput, onboardingComplete = true): voi
     updated_at: nowIso(),
     deleted_at: null,
   });
-  // Re-anchor the calendar now, then refresh Saturday's alert so a trip edit
+
+  // Enrollment: the week-1 anchor + goal targets + pinned program version.
+  // start_date is set once (the Sunday of the week the user first enrolled —
+  // the default seed already holds it) and preserved across re-saves so
+  // recalibration never resets the clock. program_id pins the latest available
+  // version at first enrollment and is preserved thereafter, so a re-seed never
+  // moves a mid-program user onto a newer template.
+  const existingEnr = db.getFirstSync<{ id: string; program_id: string | null; start_date: string }>(
+    'select id, program_id, start_date from program_enrollments where deleted_at is null order by updated_at desc limit 1',
+  );
+  const goalParams: GoalParams = {
+    startWeightLb: DEFAULT_START_WEIGHT_LB,
+    goalWeightLb: DEFAULT_GOAL_WEIGHT_LB,
+  };
+  write('program_enrollments', {
+    id: existingEnr?.id ?? deriveId('program_enrollments:singleton'),
+    program_id: existingEnr?.program_id ?? latestProgramId(),
+    start_date: existingEnr?.start_date ?? weekAnchorKey(),
+    goal_params: goalParams,
+    updated_at: nowIso(),
+    deleted_at: null,
+  });
+
+  // Re-anchor the calendar from the freshly written rows (start + goals +
+  // pinned template params), then refresh Saturday's alert so a trip edit
   // reschedules it with the new week/prescription.
-  configureSchedule(input.trip);
+  initSchedule();
   void syncSaturdayRuckNotification();
+}
+
+/** The newest locally-known program version to pin a new enrollment to, or null
+ *  when none has synced yet (the engine then falls back to the in-code builder,
+ *  which is byte-identical to the stock seed). */
+function latestProgramId(): string | null {
+  const row = db.getFirstSync<{ id: string }>('select id from programs order by version desc limit 1');
+  return row?.id ?? null;
 }
 
 /** Seed a conservative default profile on first run so weights render before
@@ -352,12 +395,13 @@ export function saveProfile(input: ProfileInput, onboardingComplete = true): voi
  *  profile pulled from the server always wins LWW, and the seed can never
  *  collide with the server's unique(user_id) from a second device. */
 export function ensureDefaultProfile(): void {
+  ensureDefaultEnrollment();
   const existing = db.getFirstSync<{ id: string }>('select id from user_profile where deleted_at is null');
   if (existing) return;
-  const maxes = anchorMaxes({ bodyweightLb: START_WEIGHT_LB, experience: 'new', calibration: {} });
+  const maxes = anchorMaxes({ bodyweightLb: DEFAULT_START_WEIGHT_LB, experience: 'new', calibration: {} });
   upsertLocal('user_profile', {
     id: Crypto.randomUUID(),
-    bodyweight_lb: START_WEIGHT_LB,
+    bodyweight_lb: DEFAULT_START_WEIGHT_LB,
     experience: 'new',
     equipment: 'full_gym',
     squat_max_lb: maxes.squat,
@@ -376,10 +420,29 @@ export function ensureDefaultProfile(): void {
     trip_pack_lb: null,
     trip_max_alt_ft: null,
     onboarding_complete: false,
-    updated_at: '1970-01-01T00:00:00.000Z',
+    updated_at: EPOCH_ISO,
     deleted_at: null,
   });
   notifyDataChanged();
+}
+
+/** Seed a local-only default enrollment so the calendar anchors to THIS week
+ *  (week 1 = now) from first boot, rather than the stock 2026-07-05. Epoch
+ *  timestamp + never enqueued: a real enrollment pulled from the server always
+ *  wins LWW, and this can never collide with the server's unique(user_id). */
+function ensureDefaultEnrollment(): void {
+  const existing = db.getFirstSync<{ id: string }>(
+    'select id from program_enrollments where deleted_at is null',
+  );
+  if (existing) return;
+  upsertLocal('program_enrollments', {
+    id: deriveId('program_enrollments:singleton'),
+    program_id: null,
+    start_date: weekAnchorKey(),
+    goal_params: { startWeightLb: DEFAULT_START_WEIGHT_LB, goalWeightLb: DEFAULT_GOAL_WEIGHT_LB },
+    updated_at: EPOCH_ISO,
+    deleted_at: null,
+  });
 }
 
 // -- Per-set strength logging -----------------------------------------------

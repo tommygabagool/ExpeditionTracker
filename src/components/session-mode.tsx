@@ -125,9 +125,9 @@ export function SessionMode({ data, ascent, onExit }: Props) {
   const [idx, setIdx] = useState(0);
   const [onSummary, setOnSummary] = useState(false);
   const [rest, setRest] = useState<{ endsAt: number; total: number } | null>(null);
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const [railH, setRailH] = useState(480);
-  const startAt = useRef(Date.now());
+  const [startAt] = useState(() => Date.now());
 
   // Lock-screen "rest over" notification. The token guards the async schedule
   // against a skip/extend racing it; a fired id cancels as a harmless no-op.
@@ -159,12 +159,17 @@ export function SessionMode({ data, ascent, onExit }: Props) {
   }, []);
 
   const restRemaining = rest ? Math.max(0, Math.ceil((rest.endsAt - now) / 1000)) : 0;
+  // Fire completion on a timer keyed to the rest itself, not the 500ms tick, so
+  // it lands exactly at endsAt and the state update happens in the timeout
+  // callback (never synchronously in the effect body).
   useEffect(() => {
-    if (rest && now >= rest.endsAt) {
+    if (!rest) return;
+    const to = setTimeout(() => {
       successFx();
       setRest(null);
-    }
-  }, [rest, now]);
+    }, Math.max(0, rest.endsAt - Date.now()));
+    return () => clearTimeout(to);
+  }, [rest]);
 
   const persist = (p: Pitch, next: SetRow[]) => {
     logExerciseSets({
@@ -198,7 +203,10 @@ export function SessionMode({ data, ascent, onExit }: Props) {
     updateRow(p, i, { done: turningOn }, true);
     if (turningOn) {
       tapFx();
-      setRest({ endsAt: Date.now() + p.restSec * 1000, total: p.restSec });
+      // `now` (the 500ms ticking clock) is close enough for a rest timer and
+      // keeps the handler pure; the completion effect self-corrects off the
+      // real clock anyway.
+      setRest({ endsAt: now + p.restSec * 1000, total: p.restSec });
       setRestNotification(p.restSec);
     }
   };
@@ -213,7 +221,7 @@ export function SessionMode({ data, ascent, onExit }: Props) {
   };
 
   // ---- summary stats ---------------------------------------------------------
-  const elapsedSec = Math.floor((now - startAt.current) / 1000);
+  const elapsedSec = Math.floor((now - startAt) / 1000);
   const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
   const setPitches = pitches.filter((p) => p.target);
   const setsDone = setPitches.reduce((n, p) => n + rows[p.name].filter((r) => r.done).length, 0);

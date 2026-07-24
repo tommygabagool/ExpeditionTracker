@@ -7,7 +7,7 @@ import { FontFamily, goldTint, palette } from '@/constants/theme';
 import { saveProfile } from '@/data/repos';
 import type { Profile } from '@/data/store';
 import { anchorMaxes } from '@/program/estimator';
-import { START_WEIGHT_LB } from '@/program/goals';
+import { DEFAULT_START_WEIGHT_LB } from '@/program/goals';
 import type { Anchor, Equipment, Experience } from '@/program/lifts';
 import { fuelPlan, type Activity, type Sex } from '@/program/nutrition';
 import { deriveCalendar, startDate, type TripConfig, type TripStyle } from '@/program/schedule';
@@ -52,7 +52,7 @@ const ACTIVITY_OPTS: { value: Activity; label: string; sub: string }[] = [
 
 export function Onboarding({ profile, onDone }: { profile: Profile | null; onDone: () => void }) {
   const insets = useSafeAreaInsets();
-  const [bw, setBw] = useState(String(profile?.bodyweightLb ?? START_WEIGHT_LB));
+  const [bw, setBw] = useState(String(profile?.bodyweightLb ?? DEFAULT_START_WEIGHT_LB));
   const [experience, setExperience] = useState<Experience>(profile?.experience ?? 'new');
   const [equipment, setEquipment] = useState<Equipment>(profile?.equipment ?? 'full_gym');
   const [cal, setCal] = useState<Record<Anchor, string>>({
@@ -86,7 +86,7 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
     savedTrip?.maxAltitudeFt ? String(savedTrip.maxAltitudeFt) : '',
   );
 
-  const bwNum = parseFloat(bw) || START_WEIGHT_LB;
+  const bwNum = parseFloat(bw) || DEFAULT_START_WEIGHT_LB;
   const calibration: Partial<Record<Anchor, number>> = {};
   for (const { anchor } of ANCHOR_ROWS) {
     const v = parseFloat(cal[anchor]);
@@ -151,7 +151,7 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
   };
   const skip = () => {
     saveProfile({
-      bodyweightLb: profile?.bodyweightLb ?? START_WEIGHT_LB,
+      bodyweightLb: profile?.bodyweightLb ?? DEFAULT_START_WEIGHT_LB,
       experience: profile?.experience ?? 'new',
       equipment: profile?.equipment ?? 'full_gym',
       calibration: profile?.calibration ?? {},

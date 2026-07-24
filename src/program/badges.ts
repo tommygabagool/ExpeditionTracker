@@ -1,5 +1,5 @@
 import type { AppData } from '@/data/store';
-import { GOAL_WEIGHT_LB, START_WEIGHT_LB } from './goals';
+import { goalWeightLb, startWeightLb } from './goals';
 import { deloadWeeks, phaseLen, phaseOf, programWeeks, weekOfKey } from './schedule';
 
 // Achievement system ported verbatim from the design file. Badges are derived
@@ -133,12 +133,12 @@ function metrics(data: AppData) {
     lb20: string | null = null,
     goalWhen: string | null = null;
   sorted.forEach((e) => {
-    const lost = START_WEIGHT_LB - e.lb;
+    const lost = startWeightLb() - e.lb;
     if (lost > maxLost) maxLost = lost;
     if (lb5 == null && lost >= 5) lb5 = e.date;
     if (lb10 == null && lost >= 10) lb10 = e.date;
     if (lb20 == null && lost >= 20) lb20 = e.date;
-    if (goalWhen == null && e.lb <= GOAL_WEIGHT_LB) goalWhen = e.date;
+    if (goalWhen == null && e.lb <= goalWeightLb()) goalWhen = e.date;
   });
   const deloadRespected = deloadWeeks().filter((w) => (byWeek[w] || 0) >= 5).length;
   // A 3-hour ruck = any ruck from LOAD CAMP on (prescriptions reach 3-5 h).

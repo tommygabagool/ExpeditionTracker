@@ -2,7 +2,13 @@
 // app bundle and returns foods normalized to the app's FoodHit shape. The app
 // caches results for a week — this function should see very little traffic.
 //
+// Write-through: each returned food is upserted into public.foods (source
+// 'usda', keyed on fdcId), building the permanent per-food cache the rest of
+// the app reads from.
+//
 // Secrets: supabase secrets set FDC_API_KEY=... (get one at fdc.nal.usda.gov)
+
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 interface FdcNutrient {
   nutrientId: number;
@@ -23,6 +29,11 @@ interface FdcFood {
 // FDC nutrient ids: 1008 kcal, 1003 protein, 1005 carbs, 1004 fat.
 const nutrient = (f: FdcFood, id: number): number | null =>
   f.foodNutrients.find((n) => n.nutrientId === id)?.value ?? null;
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+);
 
 Deno.serve(async (req) => {
   const key = Deno.env.get('FDC_API_KEY');
@@ -71,6 +82,18 @@ Deno.serve(async (req) => {
       };
     })
     .filter((h) => h !== null);
+
+  // Write-through: populate the permanent per-food cache. Best-effort — a cache
+  // write must never fail the search response.
+  if (hits.length > 0) {
+    await supabase
+      .from('foods')
+      .upsert(
+        hits.map((h) => ({ source: 'usda', source_id: h.sourceId, payload: h })),
+        { onConflict: 'source,source_id' },
+      )
+      .then(undefined, () => {});
+  }
 
   return Response.json({ hits });
 });

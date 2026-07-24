@@ -13,7 +13,7 @@ import {
 } from '@/lib/health';
 import { suggestForExercise } from '@/program/estimator';
 import { weightChart } from '@/lib/geometry';
-import { GOAL_WEIGHT_LB, START_WEIGHT_LB } from '@/program/goals';
+import { goalWeightLb, startWeightLb } from '@/program/goals';
 import { getWorkout } from '@/program/program';
 import {
   DAY_NAMES,
@@ -45,7 +45,7 @@ export function WeekTab({ data, week: weekSel, onChangeWeek }: Props) {
   const selEnd = dateOf(week, 6);
 
   const sorted = [...data.weights].sort((a, b) => (a.date < b.date ? -1 : 1));
-  const currentW = sorted.length ? sorted[sorted.length - 1].lb : START_WEIGHT_LB;
+  const currentW = sorted.length ? sorted[sorted.length - 1].lb : startWeightLb();
   const wc = weightChart(data.weights);
   const wtRows = [...sorted]
     .reverse()
@@ -195,7 +195,7 @@ export function WeekTab({ data, week: weekSel, onChangeWeek }: Props) {
         <Svg viewBox="0 0 366 190" style={styles.chart}>
           <Line x1={34} y1={wc.goalY} x2={360} y2={wc.goalY} stroke={palette.gold} strokeWidth={1} strokeDasharray="5 4" />
           <SvgText x={360} y={wc.goalLabelY} textAnchor="end" fill={palette.gold} fontFamily={FontFamily.mono} fontSize={11} letterSpacing={1}>
-            {'GOAL ' + GOAL_WEIGHT_LB}
+            {'GOAL ' + goalWeightLb()}
           </SvgText>
           {wc.gridLines.map((g) => (
             <Line key={g.label} x1={34} y1={g.y} x2={360} y2={g.y} stroke={palette.line} strokeWidth={1} />

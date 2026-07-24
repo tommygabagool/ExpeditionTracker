@@ -4,6 +4,7 @@ import {
   PHASE_HOURS,
   PHASE_PACK_LB,
   phaseOf,
+  STOCK_PARAMS,
   STOCK_PROGRAM_WEEKS,
 } from './schedule';
 
@@ -123,6 +124,16 @@ export interface ProgramDaySeed {
   title: string;
   blocks: { type: SessionType; exercises: Exercise[] };
 }
+
+/** Program-level metadata the seed writes to the shared `programs` catalog
+ *  row. `params` is the versioned template shape the engine reads back via the
+ *  enrollment (see schedule.ProgramParams / parseProgramParams). */
+export const PROGRAM_TEMPLATE = {
+  key: 'expedition-26',
+  name: 'Expedition Conditioning',
+  lengthWeeks: STOCK_PROGRAM_WEEKS,
+  params: STOCK_PARAMS,
+};
 
 export function buildProgram(): ProgramDaySeed[] {
   const out: ProgramDaySeed[] = [];

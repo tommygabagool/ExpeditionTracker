@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
 
 import { palette } from '@/constants/theme';
@@ -21,7 +21,9 @@ interface Particle {
 // Confetti flecks falling from the top edge — remount (via key) to replay.
 // Gold/sunset/pine on cream; snow-white would vanish on this paper.
 export function SnowBurst() {
-  const particles = useRef<Particle[]>(
+  // Randomized once via the lazy useState initializer (runs on mount only), so
+  // the flecks stay put across re-renders and the render body stays pure.
+  const [particles] = useState<Particle[]>(() =>
     Array.from({ length: COUNT }, () => ({
       x: Math.random() * Dimensions.get('window').width,
       size: 5 + Math.random() * 5,
@@ -33,7 +35,7 @@ export function SnowBurst() {
       spin: `${Math.round((Math.random() - 0.5) * 1440)}deg`,
       t: new Animated.Value(0),
     })),
-  ).current;
+  );
 
   useEffect(() => {
     Animated.stagger(

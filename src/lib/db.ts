@@ -61,10 +61,21 @@ create table if not exists hike_logs (
 
 create table if not exists programs (
   id text primary key,
+  key text,
   name text not null,
-  start_date text not null,
+  start_date text,
   version integer not null,
+  params text not null default '{}',
   updated_at text not null
+);
+
+create table if not exists program_enrollments (
+  id text primary key,
+  program_id text,
+  start_date text not null,
+  goal_params text not null default '{}',
+  updated_at text not null,
+  deleted_at text
 );
 
 create table if not exists program_days (
@@ -150,6 +161,13 @@ create table if not exists sync_state (
   table_name text primary key,
   last_pulled_at text not null
 );
+
+-- Local-only key/value bookkeeping (never synced). Tracks the last-synced user
+-- id so the sync engine can wipe per-user data when a different user signs in.
+create table if not exists meta (
+  key text primary key,
+  value text not null
+);
 `);
 
 // 0003: fuel stats — additive columns for databases created before them.
@@ -183,6 +201,20 @@ create table if not exists sync_state (
   ];
   for (const [col, ddl] of added) {
     if (!existing.includes(col)) db.execSync(`alter table user_profile add column ${ddl}`);
+  }
+}
+
+// 0006: shared program catalog columns — additive for pre-existing databases.
+{
+  const existing = db
+    .getAllSync<{ name: string }>('pragma table_info(programs)')
+    .map((r) => r.name);
+  const added: [string, string][] = [
+    ['key', 'key text'],
+    ['params', "params text not null default '{}'"],
+  ];
+  for (const [col, ddl] of added) {
+    if (!existing.includes(col)) db.execSync(`alter table programs add column ${ddl}`);
   }
 }
 
@@ -222,7 +254,8 @@ export const TABLE_COLUMNS = {
     'updated_at',
     'deleted_at',
   ],
-  programs: ['id', 'name', 'start_date', 'version', 'updated_at'],
+  programs: ['id', 'key', 'name', 'start_date', 'version', 'params', 'updated_at'],
+  program_enrollments: ['id', 'program_id', 'start_date', 'goal_params', 'updated_at', 'deleted_at'],
   program_days: [
     'id',
     'program_id',

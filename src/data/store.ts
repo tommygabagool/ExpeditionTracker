@@ -2,12 +2,16 @@ import { useSyncExternalStore } from 'react';
 
 import { db } from '@/lib/db';
 import type { AnchorMaxes, ExerciseLogEntry, LoggedSet } from '@/program/estimator';
-import { START_WEIGHT_LB } from '@/program/goals';
+import { DEFAULT_GOAL_WEIGHT_LB, DEFAULT_START_WEIGHT_LB, startWeightLb } from '@/program/goals';
 import type { Equipment, Experience } from '@/program/lifts';
 import type { Activity, Sex } from '@/program/nutrition';
 import {
   configureSchedule,
-  PROGRAM_START,
+  type EnrollmentConfig,
+  type GoalParams,
+  parseProgramParams,
+  startDateKey,
+  STOCK_PARAMS,
   type TripConfig,
   type TripStyle,
 } from '@/program/schedule';
@@ -63,6 +67,10 @@ function subscribe(fn: () => void): () => void {
 }
 
 function readAll(): AppData {
+  // Read the profile first: it configures the schedule (enrollment start +
+  // goals), which the startDateKey()/startWeightLb() accessors below depend on.
+  const profile = readProfile();
+
   const completions: AppData['completions'] = {};
   for (const r of db.getAllSync<{ workout_date: string }>(
     'select workout_date from workout_completions where deleted_at is null',
@@ -82,9 +90,9 @@ function readAll(): AppData {
       'select measured_on, weight_lbs from weight_entries where deleted_at is null order by measured_on',
     )
     .map((r) => ({ date: r.measured_on, lb: r.weight_lbs }));
-  if (!weights.some((w) => w.date === PROGRAM_START)) {
+  if (!weights.some((w) => w.date === startDateKey())) {
     // Virtual day-zero point so the chart always anchors at the start weight.
-    weights.unshift({ date: PROGRAM_START, lb: START_WEIGHT_LB });
+    weights.unshift({ date: startDateKey(), lb: startWeightLb() });
     weights.sort((a, b) => (a.date < b.date ? -1 : 1));
   }
 
@@ -108,8 +116,36 @@ function readAll(): AppData {
     weights,
     hikes,
     badges,
-    profile: readProfile(),
+    profile,
     exerciseLogs: readExerciseLogs(),
+  };
+}
+
+/** The signed-in user's enrollment (week-1 anchor + goal params), or null when
+ *  none is stored yet — the schedule then falls back to the stock defaults. */
+function readEnrollment(): EnrollmentConfig | null {
+  const r = db.getFirstSync<{ program_id: string | null; start_date: string; goal_params: string }>(
+    'select program_id, start_date, goal_params from program_enrollments where deleted_at is null order by updated_at desc limit 1',
+  );
+  if (!r) return null;
+  const gp = safeJson<Partial<GoalParams>>(r.goal_params, {});
+  // Template shape (length/phases/deloads/progression) comes from the pinned
+  // program version's params jsonb; STOCK_PARAMS covers the null/unpinned case.
+  let params = STOCK_PARAMS;
+  if (r.program_id) {
+    const prog = db.getFirstSync<{ params: string }>('select params from programs where id = ?', [
+      r.program_id,
+    ]);
+    if (prog) params = parseProgramParams(safeJson<unknown>(prog.params, {}));
+  }
+  return {
+    startDate: r.start_date,
+    programId: r.program_id,
+    params,
+    goals: {
+      startWeightLb: gp.startWeightLb ?? DEFAULT_START_WEIGHT_LB,
+      goalWeightLb: gp.goalWeightLb ?? DEFAULT_GOAL_WEIGHT_LB,
+    },
   };
 }
 
@@ -140,7 +176,7 @@ function readProfile(): Profile | null {
      order by onboarding_complete desc, updated_at desc limit 1`,
   );
   if (!r) {
-    configureSchedule(null);
+    configureSchedule(readEnrollment(), null);
     return null;
   }
   const hasMaxes =
@@ -162,8 +198,9 @@ function readProfile(): Profile | null {
         maxAltitudeFt: r.trip_max_alt_ft,
       }
     : null;
-  // Every profile read keeps the program calendar pointed at the saved trip.
-  configureSchedule(trip);
+  // Every profile read keeps the program calendar pointed at the enrollment
+  // (week-1 anchor + goals) and the saved trip.
+  configureSchedule(readEnrollment(), trip);
   return {
     bodyweightLb: r.bodyweight_lb,
     experience: r.experience as Experience,

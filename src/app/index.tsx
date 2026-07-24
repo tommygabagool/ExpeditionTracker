@@ -20,7 +20,7 @@ import { useAppData } from '@/data/store';
 import { useSession } from '@/hooks/use-session';
 import { computeAscent } from '@/program/ascent';
 import { CAMP_DEFS, computeBadges } from '@/program/badges';
-import { GOAL_WEIGHT_LB, START_WEIGHT_LB } from '@/program/goals';
+import { goalWeightLb, startWeightLb } from '@/program/goals';
 import { currentWeek, keyOf, programWeeks, todayDate } from '@/program/schedule';
 
 type Screen = MainTab | 'summit';
@@ -57,15 +57,21 @@ export default function AppScreen() {
       return;
     }
     if (newest) {
-      setCelebrate(newest);
-      const t = setTimeout(() => setCelebrate(null), 5200);
-      return () => clearTimeout(t);
+      const id = newest;
+      // Defer the show off the effect body (a task, not a synchronous setState
+      // in the effect) and auto-dismiss after the toast's lifetime.
+      const show = setTimeout(() => setCelebrate(id), 0);
+      const hide = setTimeout(() => setCelebrate(null), 5200);
+      return () => {
+        clearTimeout(show);
+        clearTimeout(hide);
+      };
     }
   }, [badges, data.badges]);
 
   const sorted = [...data.weights].sort((a, b) => (a.date < b.date ? -1 : 1));
-  const cur = sorted.length ? sorted[sorted.length - 1].lb : START_WEIGHT_LB;
-  const lost = Math.round((START_WEIGHT_LB - cur) * 10) / 10;
+  const cur = sorted.length ? sorted[sorted.length - 1].lb : startWeightLb();
+  const lost = Math.round((startWeightLb() - cur) * 10) / 10;
   const totalEarned = badges.filter((b) => b.earned).length;
 
   const openSummit = () => {
@@ -106,9 +112,9 @@ export default function AppScreen() {
         <Header
           badgeCountLine={`${totalEarned}/${badges.length}`}
           metaLine={`${ascent.rank.title} · ${ascent.altitudeFt.toLocaleString('en-US')} FT · WK ${String(currentWeek()).padStart(2, '0')}/${String(programWeeks()).padStart(2, '0')}`}
-          startW={START_WEIGHT_LB.toFixed(0)}
+          startW={startWeightLb().toFixed(0)}
           currentW={cur.toFixed(1)}
-          goalW={GOAL_WEIGHT_LB.toFixed(0)}
+          goalW={goalWeightLb().toFixed(0)}
           lostW={(lost > 0 ? '-' : '') + Math.abs(lost).toFixed(1)}
           onOpenSummit={openSummit}
           onPickWeek={pickWeek}

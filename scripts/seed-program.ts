@@ -1,23 +1,24 @@
-// Seeds the program tables from the builder (the program's source of truth).
-// Each run inserts a NEW program version — the app reads the highest version,
-// prior versions stay for history, and completions (keyed by date) are
-// untouched. Run with: npm run seed:program
+// Seeds the SHARED program catalog from the builder (the program's source of
+// truth). Each run inserts a NEW version of the template; the app pins the
+// version an enrollment started on, prior versions stay for mid-program users,
+// and completions (keyed by date) are untouched. Run with: npm run seed:program
 //
-// Required env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SEED_USER_ID
+// Required env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+// (No SEED_USER_ID: programs/program_days are shared read-only reference data,
+//  written only by this service-role script — see migration 0006.)
 
 import { randomUUID } from 'node:crypto';
 
 import { createClient } from '@supabase/supabase-js';
 
-import { buildProgram } from '../src/program/builder';
+import { buildProgram, PROGRAM_TEMPLATE } from '../src/program/builder';
 import { PROGRAM_START } from '../src/program/schedule';
 
 const url = process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const userId = process.env.SEED_USER_ID;
 
-if (!url || !serviceRoleKey || !userId) {
-  console.error('Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and SEED_USER_ID.');
+if (!url || !serviceRoleKey) {
+  console.error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
   process.exit(1);
 }
 
@@ -27,10 +28,11 @@ async function main() {
   const days = buildProgram();
   const now = new Date().toISOString();
 
+  // Next version for this template family (key), across all users.
   const { data: prev, error: prevError } = await supabase
     .from('programs')
     .select('version')
-    .eq('user_id', userId)
+    .eq('key', PROGRAM_TEMPLATE.key)
     .order('version', { ascending: false })
     .limit(1);
   if (prevError) throw prevError;
@@ -39,17 +41,18 @@ async function main() {
   const programId = randomUUID();
   const { error: programError } = await supabase.from('programs').insert({
     id: programId,
-    user_id: userId,
-    name: 'Expedition Conditioning',
-    start_date: PROGRAM_START,
+    key: PROGRAM_TEMPLATE.key,
+    name: PROGRAM_TEMPLATE.name,
+    length_weeks: PROGRAM_TEMPLATE.lengthWeeks,
     version,
+    params: PROGRAM_TEMPLATE.params,
+    start_date: PROGRAM_START,
     updated_at: now,
   });
   if (programError) throw programError;
 
   const rows = days.map((d) => ({
     id: randomUUID(),
-    user_id: userId,
     program_id: programId,
     week: d.week,
     day: d.day,
@@ -64,7 +67,7 @@ async function main() {
     if (error) throw error;
   }
 
-  console.log(`Seeded program version ${version}: ${rows.length} days.`);
+  console.log(`Seeded ${PROGRAM_TEMPLATE.key} version ${version}: ${rows.length} days.`);
 }
 
 main().catch((err) => {

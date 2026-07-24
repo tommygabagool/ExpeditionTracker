@@ -1,6 +1,6 @@
 import { peaksFor, type PeakProgress } from '@/data/peaks';
 import type { AppData } from '@/data/store';
-import { isDeloadWeek, keyOf, PROGRAM_START, programWeeks, todayDate, weekOfKey } from './schedule';
+import { isDeloadWeek, keyOf, programWeeks, startDateKey, todayDate, weekOfKey } from './schedule';
 
 // Altitude XP: the program IS the climb. Every completed session earns
 // vertical feet toward Everest's 29,032; Saturday rucks weigh 2.5× a weekday
@@ -59,7 +59,7 @@ const DAY_MS = 86_400_000;
 
 function computeStreak(completions: Record<string, boolean>): { streak: number; shielded: boolean } {
   const today = todayDate();
-  const start = new Date(PROGRAM_START + 'T00:00:00');
+  const start = new Date(startDateKey() + 'T00:00:00');
   let cursor = new Date(today);
   // A streak may be "alive" without today logged yet — start from yesterday then.
   if (!completions[keyOf(cursor)]) {
@@ -86,7 +86,7 @@ function computeStreak(completions: Record<string, boolean>): { streak: number; 
  *  program so far and tracking the running max — otherwise a shielded
  *  current streak could read as longer than the "best" ever recorded. */
 function computeBestStreak(completions: Record<string, boolean>): number {
-  const start = new Date(PROGRAM_START + 'T00:00:00');
+  const start = new Date(startDateKey() + 'T00:00:00');
   const end = todayDate();
   let best = 0;
   let streak = 0;

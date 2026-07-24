@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect } from 'react-native-svg';
 
@@ -278,7 +278,7 @@ function Gear({ def, pose }: { def: FigureDef; pose: Pose }) {
 
 export function ExerciseFigure({ name, size = 200 }: { name: FigureName; size?: number }) {
   const def: FigureDef = FIGURES[name];
-  const anim = useRef(new Animated.Value(0)).current;
+  const [anim] = useState(() => new Animated.Value(0));
   const [t, setT] = useState(0);
 
   useEffect(() => {

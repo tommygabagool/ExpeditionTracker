@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -19,7 +19,7 @@ export function StreakFlame({ streak, size = 16 }: { streak: number; size?: numb
 // The climb, front and center: animated altitude, rank progress, streak heat,
 // and what today's session banks.
 export function Altimeter({ ascent }: { ascent: Ascent }) {
-  const anim = useRef(new Animated.Value(0)).current;
+  const [anim] = useState(() => new Animated.Value(0));
   const [shown, setShown] = useState(0);
 
   useEffect(() => {

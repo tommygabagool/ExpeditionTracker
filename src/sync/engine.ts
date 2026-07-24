@@ -17,9 +17,12 @@ const PUSHED_TABLES: SyncedTable[] = [
   'earned_badges',
   'hike_logs',
   'user_profile',
+  'program_enrollments',
   'exercise_logs',
   'my_foods',
 ];
+// Shared, read-only tables (programs/program_days) are pull-only: the client
+// never writes them, and RLS scopes reads server-side (no user_id filter here).
 const PULLED_TABLES: SyncedTable[] = [...PUSHED_TABLES, 'programs', 'program_days'];
 
 const OVERLAP_MS = 5 * 60_000;
@@ -57,6 +60,10 @@ export async function syncNow(): Promise<void> {
     if (!data.session) {
       return;
     }
+    // Different user on this device → wipe the previous user's local data
+    // BEFORE pushing (their unpushed outbox must never land under this uid) or
+    // pulling (a clean re-pull for the new user). Local SQLite is single-user.
+    handleUserSwitch(data.session.user.id);
     const net = await NetInfo.fetch();
     if (!net.isConnected) {
       return;
@@ -69,6 +76,30 @@ export async function syncNow(): Promise<void> {
   } finally {
     syncing = false;
   }
+}
+
+const SYNCED_USER_KEY = 'synced_user';
+
+function handleUserSwitch(userId: string): void {
+  const prev = db.getFirstSync<{ value: string }>('select value from meta where key = ?', [
+    SYNCED_USER_KEY,
+  ])?.value;
+  if (prev === userId) return;
+  if (prev) {
+    // Wipe every per-user table, the outbox (its writes belong to `prev`), and
+    // all sync cursors so the new user re-pulls cleanly. Shared reference
+    // tables (programs/program_days/…) are left intact — same for all users.
+    db.withTransactionSync(() => {
+      for (const table of PUSHED_TABLES) db.runSync(`delete from ${table}`);
+      db.runSync('delete from outbox');
+      db.runSync('delete from sync_state');
+    });
+    notifyDataChanged();
+  }
+  db.runSync(
+    'insert into meta (key, value) values (?, ?) on conflict (key) do update set value = excluded.value',
+    [SYNCED_USER_KEY, userId],
+  );
 }
 
 async function pushOutbox(): Promise<void> {

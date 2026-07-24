@@ -69,6 +69,7 @@
     "typecheck": "tsc --noEmit",
     "icons": "node scripts/make-icons.js",
     "seed:program": "tsx --env-file=.env scripts/seed-program.ts",
+    "seed:reference": "tsx --env-file=.env scripts/seed-reference.ts",
     "seed:exercises": "tsx scripts/seed-exercises.ts",
     "seed:trails": "tsx scripts/seed-trails.ts"
   },

@@ -1,4 +1,4 @@
-import { isDeloadWeek } from './schedule';
+import { isDeloadWeek, progressionScale } from './schedule';
 import {
   type Anchor,
   BW_RATIO,
@@ -160,15 +160,17 @@ export function suggestFor(
   const sr = parseSetsReps(detail);
   if (!sr) return null;
 
+  // Progression increment scaled by the active template (1 = stock).
+  const increment = incrementFor(meta) * progressionScale();
   let base: number;
   if (meta.load === 'added') {
-    base = last ? progress(last, incrementFor(meta)) : 0;
+    base = last ? progress(last, increment) : 0;
   } else {
     if (!maxes) return null;
     const anchorMax = maxes[meta.anchor!];
     let seed = anchorMax * meta.factor * pctOfMax(sr.reps);
     if (meta.load === 'db_pair') seed /= 2;
-    base = last ? progress(last, incrementFor(meta)) : seed;
+    base = last ? progress(last, increment) : seed;
   }
 
   if (isDeloadWeek(week)) base *= DELOAD_LOAD_FACTOR;

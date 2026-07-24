@@ -2,6 +2,12 @@
 // function so the app gets the same normalized FoodHit shape as food-search
 // and lookups can be evolved server-side. OFF data is crowd-sourced — the app
 // presents the values as editable before logging.
+//
+// Read-through cache: a barcode's normalized hit is stored permanently in
+// public.foods (source 'off'), so each unique product hits OFF once ever
+// across the whole userbase.
+
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 interface OffProduct {
   product_name?: string;
@@ -10,10 +16,26 @@ interface OffProduct {
   nutriments?: Record<string, number | undefined>;
 }
 
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+);
+
 Deno.serve(async (req) => {
   const { code } = await req.json().catch(() => ({}));
   if (!code || !/^\d{6,14}$/.test(String(code))) {
     return Response.json({ error: 'body must be { code: "<digits>" }' }, { status: 400 });
+  }
+
+  // Permanent cache hit → serve without touching Open Food Facts.
+  const { data: cached } = await supabase
+    .from('foods')
+    .select('payload')
+    .eq('source', 'off')
+    .eq('source_id', String(code))
+    .maybeSingle();
+  if (cached) {
+    return Response.json({ hit: cached.payload });
   }
 
   const res = await fetch(
@@ -45,18 +67,21 @@ Deno.serve(async (req) => {
     return Response.json({ hit: null });
   }
 
-  return Response.json({
-    hit: {
-      label: p.product_name || `Barcode ${code}`,
-      brand: p.brands ?? null,
-      servingDesc: perServing ? (p.serving_size ?? '1 serving') : '100 g',
-      kcal: Math.round(kcal),
-      proteinG: pick('proteins'),
-      carbsG: pick('carbohydrates'),
-      fatG: pick('fat'),
-      source: 'off',
-      sourceId: String(code),
-      barcode: String(code),
-    },
-  });
+  const hit = {
+    label: p.product_name || `Barcode ${code}`,
+    brand: p.brands ?? null,
+    servingDesc: perServing ? (p.serving_size ?? '1 serving') : '100 g',
+    kcal: Math.round(kcal),
+    proteinG: pick('proteins'),
+    carbsG: pick('carbohydrates'),
+    fatG: pick('fat'),
+    source: 'off',
+    sourceId: String(code),
+    barcode: String(code),
+  };
+
+  // Populate the permanent cache so this product never hits OFF again.
+  await supabase.from('foods').upsert({ source: 'off', source_id: String(code), payload: hit });
+
+  return Response.json({ hit });
 });
