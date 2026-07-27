@@ -3,15 +3,22 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { FontFamily, palette } from '@/constants/theme';
-import { TRAIL_GEO } from '@/data/trail-geo';
 import { MAP_STYLE_URL, MAPBOX_READY } from '@/lib/mapbox';
-import type { Trail } from '@/data/trails';
 
 // Live trailhead map for the detail view. One MapView instance only — list
 // cards keep the cheap procedural SVG art. Falls back to a message when no
-// token is configured so the app still runs. Seeded trails (trail-geo.ts)
-// draw their real OSM route and fit the camera to it.
-export function TrailMap({ trail }: { trail: Trail }) {
+// token is configured so the app still runs. Draws whatever route it's given —
+// a curated trail's baked geometry (trail-geo.ts) or a nearby trail's OSM
+// geometry from the nearby_trails RPC — and fits the camera to it.
+export function TrailMap({
+  path,
+  center,
+}: {
+  /** Route as [longitude, latitude] points; null → no line, just the marker. */
+  path: [number, number][] | null;
+  /** Trailhead marker + fallback camera center. */
+  center: [number, number];
+}) {
   if (!MAPBOX_READY) {
     return (
       <View style={[styles.map, styles.fallback]}>
@@ -20,23 +27,17 @@ export function TrailMap({ trail }: { trail: Trail }) {
     );
   }
 
-  const geo = TRAIL_GEO[trail.id];
-  const bounds = geo
-    ? {
-        ne: [
-          Math.max(...geo.path.map((p) => p[0])),
-          Math.max(...geo.path.map((p) => p[1])),
-        ] as [number, number],
-        sw: [
-          Math.min(...geo.path.map((p) => p[0])),
-          Math.min(...geo.path.map((p) => p[1])),
-        ] as [number, number],
-        paddingTop: 28,
-        paddingBottom: 28,
-        paddingLeft: 28,
-        paddingRight: 28,
-      }
-    : null;
+  const bounds =
+    path && path.length > 1
+      ? {
+          ne: [Math.max(...path.map((p) => p[0])), Math.max(...path.map((p) => p[1]))] as [number, number],
+          sw: [Math.min(...path.map((p) => p[0])), Math.min(...path.map((p) => p[1]))] as [number, number],
+          paddingTop: 28,
+          paddingBottom: 28,
+          paddingLeft: 28,
+          paddingRight: 28,
+        }
+      : null;
 
   return (
     <View style={styles.map}>
@@ -49,15 +50,13 @@ export function TrailMap({ trail }: { trail: Trail }) {
         scaleBarEnabled={false}
         compassEnabled={false}>
         <Camera
-          defaultSettings={
-            bounds ? { bounds } : { centerCoordinate: trail.center, zoomLevel: 12.5 }
-          }
+          defaultSettings={bounds ? { bounds } : { centerCoordinate: center, zoomLevel: 12.5 }}
           animationMode="none"
         />
-        {geo && (
+        {path && path.length > 1 && (
           <ShapeSource
             id="trail-route"
-            shape={{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: geo.path } }}>
+            shape={{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: path } }}>
             <LineLayer
               id="trail-route-line"
               style={{
@@ -70,7 +69,7 @@ export function TrailMap({ trail }: { trail: Trail }) {
             />
           </ShapeSource>
         )}
-        <MarkerView coordinate={trail.center} anchor={{ x: 0.5, y: 1 }}>
+        <MarkerView coordinate={center} anchor={{ x: 0.5, y: 1 }}>
           <Svg viewBox="0 0 24 24" width={30} height={30}>
             <Path
               d="M2 20 L9 7 L13 13 L16 9 L22 20 Z"

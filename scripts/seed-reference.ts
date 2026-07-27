@@ -1,9 +1,12 @@
-// Seeds the SHARED reference catalogs (exercises, trails, peaks) from the app's
+// Seeds the SHARED reference catalogs (exercises, peaks) from the app's
 // in-bundle data into Supabase (migration 0008). These are read-only reference
 // tables — written only by this service-role script. Re-runnable: every row is
 // upserted by id. Run with: npm run seed:reference
 //
 // Required env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+//
+// Trails are NOT seeded here — they come from the OSM → PostGIS import pipeline
+// (migration 0009 + docs/trails-import.md), not the curated bundle.
 //
 // The app still reads the in-bundle copies at runtime; this makes the DB the
 // server-side source of record so the catalogs can be corrected without an app
@@ -12,7 +15,6 @@
 import { createClient } from '@supabase/supabase-js';
 
 import { PEAKS } from '../src/data/peaks';
-import { TRAILS } from '../src/data/trails';
 import { EXERCISE_INFO } from '../src/program/exercise-library';
 import { LIFTS } from '../src/program/lifts';
 
@@ -45,8 +47,6 @@ async function main() {
     updated_at: now,
   }));
 
-  const trails = TRAILS.map((t) => ({ id: t.id, name: t.name, payload: t, updated_at: now }));
-
   const peaks = PEAKS.map((p) => ({
     id: p.id,
     name: p.name,
@@ -56,7 +56,6 @@ async function main() {
   }));
 
   await upsertAll('exercises', exercises);
-  await upsertAll('trails', trails);
   await upsertAll('peaks', peaks);
 }
 

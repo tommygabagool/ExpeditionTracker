@@ -9,7 +9,9 @@ import type { AppData } from '@/data/store';
 import { TRAIL_GEO } from '@/data/trail-geo';
 import { diffColor, TRAILS, type Trail } from '@/data/trails';
 import { realTrailProfile, topo, trailProfile, trailRoute } from '@/lib/geometry';
+import { getCurrentCoords } from '@/lib/location';
 import { saveWorkoutToHealth } from '@/lib/health';
+import { nearbyTrails, type NearbyTrail } from '@/lib/trails-api';
 import { getTrailheadWeather, weatherLine, type WeatherResult } from '@/lib/weather';
 import { clampedWeekOf, fmtShort, keyOf, nextSaturday, targetGain } from '@/program/schedule';
 import { ruckRx } from '@/program/trip';
@@ -70,6 +72,29 @@ export function TrailsTab({ data }: { data: AppData }) {
   const [trailSel, setTrailSel] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>({ dist: 'any', gain: 'any', drive: 'any' });
 
+  // "Trails near me" — device GPS + the nearby_trails PostGIS RPC. Layered on
+  // top of the curated set, which stays the offline/no-signal browse.
+  const [nearby, setNearby] = useState<NearbyTrail[] | null>(null);
+  const [nearbyBusy, setNearbyBusy] = useState(false);
+  const [nearbyMsg, setNearbyMsg] = useState<string | null>(null);
+  const [nearbySelId, setNearbySelId] = useState<number | null>(null);
+
+  const findNearby = async () => {
+    if (nearbyBusy) return;
+    setNearbyBusy(true);
+    setNearbyMsg(null);
+    const coords = await getCurrentCoords();
+    if (!coords) {
+      setNearbyBusy(false);
+      setNearbyMsg('LOCATION UNAVAILABLE — ENABLE IT IN SETTINGS OR BROWSE THE LIST');
+      return;
+    }
+    const results = await nearbyTrails(coords.lat, coords.lon);
+    setNearby(results);
+    setNearbyBusy(false);
+    if (results.length === 0) setNearbyMsg('NO IMPORTED TRAILS NEARBY YET');
+  };
+
   const satDate = nextSaturday();
   const satKey = keyOf(satDate);
   const satWeek = clampedWeekOf(satDate);
@@ -126,6 +151,85 @@ export function TrailsTab({ data }: { data: AppData }) {
     },
   ];
 
+  const nearbySel = nearby?.find((t) => t.id === nearbySelId) ?? null;
+  if (nearbySel) {
+    const prof =
+      nearbySel.profileFt && nearbySel.profileFt.length > 1
+        ? realTrailProfile(nearbySel.profileFt, 358, 130)
+        : null;
+    const center = nearbySel.path[0] ?? ([0, 0] as [number, number]);
+    return (
+      <View style={styles.container}>
+        <Pressable onPress={() => setNearbySelId(null)} style={styles.backBtn}>
+          <Text style={styles.backText}>‹ NEAR ME</Text>
+        </Pressable>
+
+        <View style={styles.detailPanel}>
+          <TrailMap path={nearbySel.path} center={center} />
+          <View style={{ padding: 16 }}>
+            <Text style={styles.detailName}>{(nearbySel.name ?? 'UNNAMED TRAIL').toUpperCase()}</Text>
+
+            <View style={styles.detailStats}>
+              {(
+                [
+                  ['DISTANCE', nearbySel.lengthMi != null ? nearbySel.lengthMi.toFixed(1) + ' MI' : '—'],
+                  ['GAIN', nearbySel.gainFt != null ? nearbySel.gainFt.toLocaleString('en-US') + ' FT' : '—'],
+                  ['FROM YOU', nearbySel.distanceMi.toFixed(1) + ' MI'],
+                  ['TYPE', (nearbySel.kind ?? 'trail').replace(/_/g, ' ').toUpperCase()],
+                ] as const
+              ).map(([label, value]) => (
+                <View key={label} style={styles.detailStatCell}>
+                  <Text style={styles.detailStatLabel}>{label}</Text>
+                  <Text style={styles.detailStatValue}>{value}</Text>
+                </View>
+              ))}
+            </View>
+
+            {prof && (
+              <>
+                <Text style={styles.sectionLabel}>ELEVATION PROFILE</Text>
+                <Svg viewBox="0 0 358 130" style={{ width: '100%', aspectRatio: 358 / 130, marginTop: 6 }}>
+                  <Line x1={38} y1={18} x2={348} y2={18} stroke={palette.line} strokeWidth={1} strokeDasharray="2 4" />
+                  <Line x1={38} y1={114} x2={348} y2={114} stroke={palette.line} strokeWidth={1} />
+                  <SvgText x={34} y={21} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
+                    {prof.maxFt.toLocaleString('en-US') + ' FT'}
+                  </SvgText>
+                  <SvgText x={34} y={117} textAnchor="end" fill={palette.faint} fontFamily={FontFamily.mono} fontSize={11}>
+                    {prof.minFt.toLocaleString('en-US')}
+                  </SvgText>
+                  <Path d={prof.area} fill={palette.orange} opacity={0.12} />
+                  <Path d={prof.line} fill="none" stroke={palette.orange} strokeWidth={2} strokeLinejoin="round" />
+                </Svg>
+              </>
+            )}
+
+            <Pressable
+              onPress={() => {
+                logHike(
+                  {
+                    id: String(nearbySel.id),
+                    name: nearbySel.name ?? 'Trail',
+                    dist: nearbySel.lengthMi ?? 0,
+                    gain: nearbySel.gainFt ?? 0,
+                  },
+                  satKey,
+                );
+                // Rough ruck duration from distance (~2 mph) — no trail time
+                // estimate for OSM trails. No-op unless Health is connected.
+                const mins = nearbySel.lengthMi ? Math.round((nearbySel.lengthMi / 2) * 60) : 0;
+                if (!satDone && mins > 0) void saveWorkoutToHealth('ruck', mins * 60);
+              }}
+              style={[styles.logHikeBtn, { backgroundColor: satDone ? palette.green : palette.orange, borderColor: satDone ? palette.green : palette.orange }]}>
+              <Text style={styles.logHikeText}>
+                {satDone ? '✓ LOGGED — SATURDAY COMPLETE' : 'LOG THIS HIKE'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   const sel = TRAILS.find((t) => t.id === trailSel) ?? null;
 
   if (sel) {
@@ -141,7 +245,7 @@ export function TrailsTab({ data }: { data: AppData }) {
         </Pressable>
 
         <View style={styles.detailPanel}>
-          <TrailMap trail={sel} />
+          <TrailMap path={TRAIL_GEO[sel.id]?.path ?? null} center={sel.center} />
           <View style={{ padding: 16 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
               <Text style={styles.detailName}>{sel.name.toUpperCase()}</Text>
@@ -233,6 +337,32 @@ export function TrailsTab({ data }: { data: AppData }) {
       </View>
 
       <View style={{ gap: 8 }}>
+        <Pressable onPress={findNearby} style={styles.nearMeBtn} disabled={nearbyBusy}>
+          <Text style={styles.nearMeText}>{nearbyBusy ? 'LOCATING…' : '◎ FIND TRAILS NEAR ME'}</Text>
+        </Pressable>
+        {nearbyMsg && <Text style={styles.noTrails}>{nearbyMsg}</Text>}
+        {nearby && nearby.length > 0 && (
+          <View style={{ gap: 8 }}>
+            {nearby.map((t) => (
+              <Pressable key={t.id} onPress={() => setNearbySelId(t.id)} style={styles.nearbyCard}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.cardName} numberOfLines={1}>
+                    {(t.name ?? 'UNNAMED TRAIL').toUpperCase()}
+                  </Text>
+                  <Text style={styles.cardStats}>
+                    {t.distanceMi.toFixed(1)} MI AWAY
+                    {t.lengthMi != null ? ` · ${t.lengthMi.toFixed(1)} MI` : ''}
+                    {t.gainFt != null ? ` · ${t.gainFt.toLocaleString('en-US')} FT` : ''}
+                  </Text>
+                </View>
+                <Text style={{ color: palette.faint, fontSize: 16 }}>›</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </View>
+
+      <View style={{ gap: 8 }}>
         {chipRows.map((row) => (
           <View key={row.label} style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
             <Text style={styles.chipRowLabel}>{row.label}</Text>
@@ -311,6 +441,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     padding: 10,
+    alignItems: 'center',
+  },
+  nearMeBtn: {
+    borderWidth: 1,
+    borderColor: palette.orange,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nearMeText: {
+    fontFamily: FontFamily.displaySemiBold,
+    fontSize: 13,
+    letterSpacing: 1.5,
+    color: palette.orange,
+  },
+  nearbyCard: {
+    backgroundColor: palette.panel,
+    borderWidth: 1,
+    borderColor: palette.line,
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     alignItems: 'center',
   },
   cardArt: {

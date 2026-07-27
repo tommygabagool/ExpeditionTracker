@@ -17,5 +17,13 @@ export default (): ExpoConfig => ({
         RNMapboxMapsDownloadToken: process.env.MAPBOX_DOWNLOAD_TOKEN ?? '',
       },
     ],
+    [
+      'expo-location',
+      {
+        // iOS usage string + Android ACCESS_FINE/COARSE_LOCATION. Foreground
+        // only — the app reads position on demand for "trails near me".
+        locationWhenInUsePermission: 'Switchback uses your location to find hiking trails near you.',
+      },
+    ],
   ],
 });

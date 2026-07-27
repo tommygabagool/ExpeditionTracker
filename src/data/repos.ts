@@ -9,7 +9,6 @@ import type { Anchor, Equipment, Experience } from '@/program/lifts';
 import type { Activity, Sex } from '@/program/nutrition';
 import { type GoalParams, keyOf, todayDate, type TripConfig } from '@/program/schedule';
 import { enqueueLocal, syncNow } from '@/sync/engine';
-import type { Trail } from './trails';
 
 // All writes go through here — SQLite first, then the outbox, then a store
 // notification so the UI re-reads. Date keys are local-time yyyy-mm-dd.
@@ -271,8 +270,13 @@ export function awardBadge(badgeKey: string, earnedOnKey?: string): void {
   });
 }
 
-/** Logging a hike also marks that day's workout complete (design behavior). */
-export function logHike(trail: Trail, dateKey: string): void {
+/** Logging a hike also marks that day's workout complete (design behavior).
+ *  Accepts the minimal shape both a curated Trail and a nearby (OSM) trail
+ *  satisfy. */
+export function logHike(
+  trail: { id: string; name: string; dist: number; gain: number },
+  dateKey: string,
+): void {
   write('hike_logs', {
     id: existingId(
       'select id from hike_logs where hiked_on = ?',
