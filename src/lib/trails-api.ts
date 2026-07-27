@@ -33,7 +33,17 @@ interface RpcRow {
 
 const M_PER_MI = 1609.34;
 const CACHE_KEY = 'trails:nearby';
+const NETWORK_TIMEOUT_MS = 10_000;
 const round1 = (x: number) => Math.round(x * 10) / 10;
+
+/** Reject a stalled request so the caller falls back to cache instead of
+ *  hanging the "LOCATING…" state on a slow-but-not-offline connection. */
+function withTimeout<T>(p: PromiseLike<T>, ms = NETWORK_TIMEOUT_MS): Promise<T> {
+  return Promise.race([
+    Promise.resolve(p),
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ]);
+}
 
 function fromRow(r: RpcRow): NearbyTrail {
   return {
@@ -54,12 +64,14 @@ export async function nearbyTrails(lat: number, lon: number, radiusMi = 15): Pro
   const client = supabase;
   if (client) {
     try {
-      const { data, error } = await client.rpc('nearby_trails', {
-        lat,
-        lon,
-        radius_m: radiusMi * M_PER_MI,
-        max_results: 50,
-      });
+      const { data, error } = await withTimeout(
+        client.rpc('nearby_trails', {
+          lat,
+          lon,
+          radius_m: radiusMi * M_PER_MI,
+          max_results: 50,
+        }),
+      );
       if (error) throw error;
       const trails = (data as RpcRow[]).map(fromRow);
       await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(trails)).catch(() => {});

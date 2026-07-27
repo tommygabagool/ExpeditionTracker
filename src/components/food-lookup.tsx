@@ -65,6 +65,7 @@ export function FoodLookup({ todayKey }: Props) {
   const [scanMsg, setScanMsg] = useState<string | null>(null);
   const [picked, setPicked] = useState<Pick | null>(null);
   const [kcalEdit, setKcalEdit] = useState('');
+  const [addMsg, setAddMsg] = useState<string | null>(null);
   // Bumped on every search and on every keystroke so a slow/stale response
   // (query changed, or a second search fired, while the first was in flight)
   // can never overwrite results that no longer match what's on screen.
@@ -77,6 +78,7 @@ export function FoodLookup({ todayKey }: Props) {
     setPicked(p);
     setKcalEdit(String(p.kcal));
     setScanMsg(null);
+    setAddMsg(null);
   };
 
   const runSearch = async () => {
@@ -113,12 +115,16 @@ export function FoodLookup({ todayKey }: Props) {
   const add = () => {
     if (!picked) return;
     const kcal = parseInt(kcalEdit, 10);
-    if (!kcal || kcal < 1 || kcal > 5000) return;
+    if (!kcal || kcal < 1 || kcal > 5000) {
+      setAddMsg('ENTER A KCAL VALUE BETWEEN 1 AND 5000');
+      return;
+    }
     addDailyCalories(todayKey, kcal);
     saveMyFoodUse({ ...picked, kcal });
     setPicked(null);
     setQuery('');
     setRemote([]);
+    setAddMsg(null);
   };
 
   const rows: { key: string; tag: string; tagColor: string; p: Pick }[] = [
@@ -198,6 +204,7 @@ export function FoodLookup({ todayKey }: Props) {
           </Pressable>
         </View>
       )}
+      {picked && addMsg && <Text style={styles.scanMsg}>{addMsg}</Text>}
 
       {Scanner && <Scanner onScanned={(code) => void onScanned(code)} onClose={() => setScanner(null)} />}
     </View>

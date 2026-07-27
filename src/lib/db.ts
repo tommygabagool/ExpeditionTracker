@@ -361,3 +361,33 @@ export function getLocalUpdatedAt(table: SyncedTable, id: string): string | null
   );
   return row?.updated_at ?? null;
 }
+
+// ---- current signed-in user ------------------------------------------------
+// The user id is folded into deterministic ids (repos.deriveId) so two
+// different accounts never derive the same server primary key for the same
+// natural key (which would upsert-become-insert past RLS and wedge sync on a
+// duplicate-key error). Also used by the sync engine to detect a user switch.
+// Cached in-memory and persisted in `meta` so it's readable synchronously at
+// launch (before the first sync runs) — for a returning user on an existing
+// install it survives across launches, so there's no unscoped-id window.
+
+const SYNCED_USER_KEY = 'synced_user';
+let cachedUserId: string | null = null;
+
+/** Signed-in user id (''=no one has synced on this device yet). Synchronous. */
+export function currentUserId(): string {
+  if (cachedUserId !== null) return cachedUserId;
+  cachedUserId =
+    db.getFirstSync<{ value: string }>('select value from meta where key = ?', [SYNCED_USER_KEY])
+      ?.value ?? '';
+  return cachedUserId;
+}
+
+/** Record the signed-in user id (in-memory + persisted). */
+export function setCurrentUserId(uid: string): void {
+  cachedUserId = uid;
+  db.runSync(
+    'insert into meta (key, value) values (?, ?) on conflict (key) do update set value = excluded.value',
+    [SYNCED_USER_KEY, uid],
+  );
+}

@@ -41,15 +41,18 @@ Deno.serve(async (req) => {
     return Response.json({ error: 'FDC_API_KEY not configured' }, { status: 500 });
   }
   const { q } = await req.json().catch(() => ({}));
-  if (!q || typeof q !== 'string') {
-    return Response.json({ error: 'body must be { q: string }' }, { status: 400 });
+  // Bound the length: an unbounded string is forwarded verbatim to USDA and
+  // becomes a cache key — cap it so a hostile client can't abuse either.
+  if (!q || typeof q !== 'string' || q.trim().length < 1 || q.length > 100) {
+    return Response.json({ error: 'body must be { q: string } (1–100 chars)' }, { status: 400 });
   }
 
   const url =
     'https://api.nal.usda.gov/fdc/v1/foods/search' +
     `?api_key=${key}&query=${encodeURIComponent(q)}` +
     '&dataType=Foundation,SR%20Legacy,Branded&pageSize=12';
-  const res = await fetch(url);
+  // Abort a stalled USDA call rather than hold the function open to the platform limit.
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
   if (!res.ok) {
     return Response.json({ error: `FDC ${res.status}` }, { status: 502 });
   }

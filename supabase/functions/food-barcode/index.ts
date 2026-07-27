@@ -41,7 +41,11 @@ Deno.serve(async (req) => {
   const res = await fetch(
     `https://world.openfoodfacts.org/api/v2/product/${code}.json` +
       '?fields=product_name,brands,serving_size,nutriments',
-    { headers: { 'User-Agent': 'Switchback - personal training app' } },
+    {
+      headers: { 'User-Agent': 'Switchback - personal training app' },
+      // Abort a stalled Open Food Facts call rather than hold the function open.
+      signal: AbortSignal.timeout(8000),
+    },
   );
   if (res.status === 404) {
     return Response.json({ hit: null });

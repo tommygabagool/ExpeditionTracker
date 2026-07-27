@@ -10,7 +10,7 @@ import { anchorMaxes } from '@/program/estimator';
 import { DEFAULT_START_WEIGHT_LB } from '@/program/goals';
 import type { Anchor, Equipment, Experience } from '@/program/lifts';
 import { fuelPlan, type Activity, type Sex } from '@/program/nutrition';
-import { deriveCalendar, startDate, type TripConfig, type TripStyle } from '@/program/schedule';
+import { deriveCalendar, startDate, todayDate, type TripConfig, type TripStyle } from '@/program/schedule';
 import { ruckRxFor } from '@/program/trip';
 
 const EXPERIENCE_OPTS: { value: Experience; label: string; sub: string }[] = [
@@ -86,7 +86,9 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
     savedTrip?.maxAltitudeFt ? String(savedTrip.maxAltitudeFt) : '',
   );
 
-  const bwNum = parseFloat(bw) || DEFAULT_START_WEIGHT_LB;
+  // Clamp to a human range so a stray '-' or a fat-fingered value can't feed
+  // negative/absurd numbers into the strength and fuel math.
+  const bwNum = Math.min(1000, Math.max(50, parseFloat(bw) || DEFAULT_START_WEIGHT_LB));
   const calibration: Partial<Record<Anchor, number>> = {};
   for (const { anchor } of ANCHOR_ROWS) {
     const v = parseFloat(cal[anchor]);
@@ -114,13 +116,17 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
   const td = parseInt(tripDD, 10);
   const ty = parseInt(tripYYYY, 10);
   const tripDateObj = new Date(ty, (tm || 1) - 1, td || 1);
-  const dateValid =
+  const dateComplete =
     ty > 0 &&
     tm > 0 &&
     td > 0 &&
     tripDateObj.getFullYear() === ty &&
     tripDateObj.getMonth() === tm - 1 &&
     tripDateObj.getDate() === td;
+  // A trip in the past would silently collapse the calendar to the 8-week floor
+  // anchored before today (and skew fuel pacing) — reject it and say why.
+  const datePast = dateComplete && tripDateObj.getTime() < todayDate().getTime();
+  const dateValid = dateComplete && !datePast;
   const tripDate = dateValid
     ? `${ty}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`
     : null;
@@ -278,6 +284,9 @@ export function Onboarding({ profile, onDone }: { profile: Profile | null; onDon
             />
             <Text style={styles.unit}>TRIP DATE</Text>
           </View>
+          {datePast && (
+            <Text style={styles.dateWarn}>TRIP DATE IS IN THE PAST — PICK A FUTURE DATE</Text>
+          )}
           <View style={{ gap: 8, marginTop: 12 }}>
             {STYLE_OPTS.map((o) => (
               <OptionRow
@@ -590,6 +599,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: palette.gold,
     marginTop: 14,
+  },
+  dateWarn: {
+    fontFamily: FontFamily.mono,
+    fontSize: 12,
+    color: palette.orange,
+    letterSpacing: 0.3,
+    marginTop: 10,
   },
   primaryBtn: {
     backgroundColor: palette.orange,

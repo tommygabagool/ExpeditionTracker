@@ -35,6 +35,16 @@ export interface WeatherResult {
 }
 
 const cacheKey = (trailId: string, dateKey: string) => `wx:${trailId}:${dateKey}`;
+const NETWORK_TIMEOUT_MS = 10_000;
+
+/** Reject a stalled request so a slow-but-not-offline connection falls back to
+ *  the cached forecast instead of leaving the caller awaiting forever. */
+function withTimeout<T>(p: PromiseLike<T>, ms = NETWORK_TIMEOUT_MS): Promise<T> {
+  return Promise.race([
+    Promise.resolve(p),
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ]);
+}
 
 /** Forecast for a trailhead on a given day. Same-day AsyncStorage hit → fast
  *  path; otherwise the `weather` edge function (server cache + upstream calls);
@@ -58,9 +68,11 @@ export async function getTrailheadWeather(
   const client = supabase;
   if (client) {
     try {
-      const { data, error } = await client.functions.invoke('weather', {
-        body: { trailheadId: trail.id, center: trail.center, date: dateKey },
-      });
+      const { data, error } = await withTimeout(
+        client.functions.invoke('weather', {
+          body: { trailheadId: trail.id, center: trail.center, date: dateKey },
+        }),
+      );
       if (error) throw error;
       const result = data as { weather: TrailheadWeather | null; stale?: boolean };
       if (result.weather) {

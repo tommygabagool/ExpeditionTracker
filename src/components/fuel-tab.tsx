@@ -42,6 +42,7 @@ const SAMPLE_MEALS = [
 
 export function FuelTab({ data }: { data: AppData }) {
   const [calInput, setCalInput] = useState('');
+  const [logMsg, setLogMsg] = useState<string | null>(null);
   const today = todayDate();
   const todayKey = keyOf(today);
 
@@ -87,9 +88,13 @@ export function FuelTab({ data }: { data: AppData }) {
 
   const submit = () => {
     const v = parseInt(calInput, 10);
-    if (!v || v < 200 || v > 12000) return;
+    if (!v || v < 200 || v > 12000) {
+      setLogMsg('ENTER A DAILY TOTAL BETWEEN 200 AND 12,000');
+      return;
+    }
     setDailyCalories(todayKey, v);
     setCalInput('');
+    setLogMsg(null);
   };
 
   return (
@@ -150,6 +155,7 @@ export function FuelTab({ data }: { data: AppData }) {
             <Text style={styles.logBtnText}>LOG</Text>
           </Pressable>
         </View>
+        {logMsg && <Text style={styles.logMsg}>{logMsg}</Text>}
         <View style={styles.avgRow}>
           <Text style={styles.avgLabel}>7-DAY AVERAGE</Text>
           <Text
@@ -278,6 +284,13 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.displaySemiBold,
     fontSize: 15,
     letterSpacing: 2,
+  },
+  logMsg: {
+    fontFamily: FontFamily.mono,
+    fontSize: 11,
+    color: palette.orange,
+    letterSpacing: 0.5,
+    marginTop: 8,
   },
   avgRow: {
     flexDirection: 'row',

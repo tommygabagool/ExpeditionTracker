@@ -2,7 +2,14 @@ import NetInfo from '@react-native-community/netinfo';
 import { AppState } from 'react-native';
 
 import { notifyDataChanged } from '@/data/store';
-import { db, getLocalUpdatedAt, upsertLocal, type SyncedTable } from '@/lib/db';
+import {
+  currentUserId,
+  db,
+  getLocalUpdatedAt,
+  setCurrentUserId,
+  upsertLocal,
+  type SyncedTable,
+} from '@/lib/db';
 import { supabase } from '@/lib/supabase';
 
 // Offline-first sync: SQLite is the source of truth for the UI; every local
@@ -78,12 +85,8 @@ export async function syncNow(): Promise<void> {
   }
 }
 
-const SYNCED_USER_KEY = 'synced_user';
-
 function handleUserSwitch(userId: string): void {
-  const prev = db.getFirstSync<{ value: string }>('select value from meta where key = ?', [
-    SYNCED_USER_KEY,
-  ])?.value;
+  const prev = currentUserId(); // '' when no one has synced on this device yet
   if (prev === userId) return;
   if (prev) {
     // Wipe every per-user table, the outbox (its writes belong to `prev`), and
@@ -96,10 +99,7 @@ function handleUserSwitch(userId: string): void {
     });
     notifyDataChanged();
   }
-  db.runSync(
-    'insert into meta (key, value) values (?, ?) on conflict (key) do update set value = excluded.value',
-    [SYNCED_USER_KEY, userId],
-  );
+  setCurrentUserId(userId);
 }
 
 async function pushOutbox(): Promise<void> {

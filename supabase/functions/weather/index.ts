@@ -11,6 +11,13 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const CACHE_TTL_MS = 3 * 60 * 60 * 1000; // a few hours
+const UPSTREAM_TIMEOUT_MS = 8000; // cap any single upstream call
+
+/** fetch that aborts after UPSTREAM_TIMEOUT_MS — a stalled forecast provider
+ *  must not hold the function (or a caller) open until the platform timeout. */
+function fetchT(url: string, init?: RequestInit): Promise<Response> {
+  return fetch(url, { ...init, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) });
+}
 
 interface TrailheadWeather {
   dateKey: string;
@@ -51,7 +58,7 @@ async function fromOpenMeteo(lon: number, lat: number, dateKey: string): Promise
     '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max' +
     '&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch' +
     `&timezone=auto&start_date=${dateKey}&end_date=${dateKey}`;
-  const res = await fetch(url);
+  const res = await fetchT(url);
   if (!res.ok) throw new Error(`open-meteo ${res.status}`);
   const json = await res.json();
   const d = json.daily;
@@ -71,10 +78,10 @@ async function fromOpenMeteo(lon: number, lat: number, dateKey: string): Promise
 
 async function fromNws(lon: number, lat: number, dateKey: string): Promise<TrailheadWeather> {
   const headers = { 'User-Agent': 'Switchback personal training app', Accept: 'application/geo+json' };
-  const ptRes = await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`, { headers });
+  const ptRes = await fetchT(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`, { headers });
   if (!ptRes.ok) throw new Error(`nws points ${ptRes.status}`);
   const pt = await ptRes.json();
-  const fcRes = await fetch(pt.properties.forecast, { headers });
+  const fcRes = await fetchT(pt.properties.forecast, { headers });
   if (!fcRes.ok) throw new Error(`nws forecast ${fcRes.status}`);
   const fc = await fcRes.json();
   const period = fc.properties.periods.find(
@@ -108,13 +115,39 @@ Deno.serve(async (req) => {
     center?: [number, number];
     date?: string;
   };
-  if (!trailheadId || !Array.isArray(center) || center.length !== 2 || !date) {
+  if (
+    !trailheadId ||
+    typeof trailheadId !== 'string' ||
+    trailheadId.length > 128 ||
+    !Array.isArray(center) ||
+    center.length !== 2 ||
+    typeof date !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(date)
+  ) {
     return Response.json(
-      { error: 'body must be { trailheadId: string, center: [lon, lat], date: "YYYY-MM-DD" }' },
+      { error: 'body must be { trailheadId: string (≤128 chars), center: [lon, lat], date: "YYYY-MM-DD" }' },
       { status: 400 },
     );
   }
   const [lon, lat] = center;
+  // Reject non-finite / out-of-range coordinates: they can't be a real
+  // trailhead, would produce a garbage upstream URL, and (with the arbitrary
+  // trailheadId) could pollute the shared weather_cache keyspace.
+  if (
+    typeof lon !== 'number' ||
+    typeof lat !== 'number' ||
+    !Number.isFinite(lon) ||
+    !Number.isFinite(lat) ||
+    lat < -90 ||
+    lat > 90 ||
+    lon < -180 ||
+    lon > 180
+  ) {
+    return Response.json(
+      { error: 'center must be [lon, lat] within valid coordinate ranges' },
+      { status: 400 },
+    );
+  }
 
   // Fresh cache hit → serve without touching upstream.
   const { data: cached } = await supabase

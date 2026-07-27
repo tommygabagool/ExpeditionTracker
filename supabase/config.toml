@@ -1,0 +1,21 @@
+# Supabase project config.
+#
+# `project_id` is a LOCAL label only (namespaces `supabase start` containers) —
+# it is NOT the remote project ref, and does not affect `supabase link`. Change
+# it if your local tooling expects a different value.
+project_id = "expedition-conditioning"
+
+# Edge functions: require a valid JWT at the gateway. These proxies hold the
+# service-role key internally, so only authenticated app users (never anonymous
+# internet traffic) may invoke them. `verify_jwt = true` is the Supabase default
+# but is pinned here explicitly so it can't silently regress from a dashboard
+# toggle. The app calls them via supabase.functions.invoke, which attaches the
+# session JWT automatically.
+[functions.weather]
+verify_jwt = true
+
+[functions.food-search]
+verify_jwt = true
+
+[functions.food-barcode]
+verify_jwt = true
