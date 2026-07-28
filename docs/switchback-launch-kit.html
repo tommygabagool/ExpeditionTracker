@@ -1,0 +1,378 @@
+<title>Switchback — Launch Kit</title>
+<style>
+  :root{
+    --ground:#F2ECDC; --ground-2:#EDE6D3; --panel:#E9E1CC; --panel-deep:#DFD5BB;
+    --line:#D3C7A9; --border:#B7A87F; --ink:#2C2A20; --ink-dim:#4F4A38;
+    --muted:#7A7258; --faint:#A29878; --pine:#2F5233; --sky:#5E7F92;
+    --sunset:#C75B39; --gold:#A8801F; --gold-bright:#D9AF54; --band:#26241C; --band-text:#F2ECDC;
+    --gold-tint:rgba(201,156,60,.16);
+    --font-display:'Rockwell','Roboto Slab','Bookman Old Style',Georgia,serif;
+    --font-body:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --font-mono:'SF Mono','SFMono-Regular','Cascadia Code','JetBrains Mono',Consolas,monospace;
+    --maxw:920px;
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --ground:#16150F; --ground-2:#1B1A12; --panel:#201E16; --panel-deep:#262319;
+    --line:#38341F; --border:#4A452F; --ink:#ECE4CE; --ink-dim:#C9BF9F;
+    --muted:#9C926F; --faint:#6F674C; --pine:#6F9E6A; --sky:#8FB6CB;
+    --sunset:#E1794F; --gold:#D9AF54; --gold-bright:#E7C36B; --band:#0F0E09;
+    --gold-tint:rgba(217,175,84,.12);
+  }}
+  :root[data-theme="light"]{
+    --ground:#F2ECDC; --ground-2:#EDE6D3; --panel:#E9E1CC; --panel-deep:#DFD5BB;
+    --line:#D3C7A9; --border:#B7A87F; --ink:#2C2A20; --ink-dim:#4F4A38;
+    --muted:#7A7258; --faint:#A29878; --sunset:#C75B39; --gold:#A8801F; --gold-bright:#D9AF54; --band:#26241C; --pine:#2F5233; --sky:#5E7F92;
+  }
+  :root[data-theme="dark"]{
+    --ground:#16150F; --ground-2:#1B1A12; --panel:#201E16; --panel-deep:#262319;
+    --line:#38341F; --border:#4A452F; --ink:#ECE4CE; --ink-dim:#C9BF9F;
+    --muted:#9C926F; --faint:#6F674C; --sunset:#E1794F; --gold:#D9AF54; --gold-bright:#E7C36B; --band:#0F0E09; --pine:#6F9E6A; --sky:#8FB6CB;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+  body{margin:0;}
+  .kit{background:var(--ground);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+  h1,h2,h3{font-family:var(--font-display);font-weight:400;text-wrap:balance;}
+  a{color:var(--sunset);}
+  :focus-visible{outline:2px solid var(--sunset);outline-offset:2px;}
+  .kick{font-family:var(--font-display);text-transform:uppercase;letter-spacing:.22em;font-size:.68rem;color:var(--sunset);}
+
+  /* header */
+  .head{background:var(--band);color:var(--band-text);padding:44px 0 40px;position:relative;overflow:hidden;}
+  .head .kick{color:var(--gold-bright);}
+  .head h1{font-size:clamp(2rem,5vw,3.1rem);text-transform:uppercase;margin:.4rem 0 .4rem;line-height:1;}
+  .head h1 b{color:var(--sunset);font-weight:400;}
+  .head p{margin:0;opacity:.82;max-width:52ch;}
+  .head .contour{position:absolute;inset:0;opacity:.5;pointer-events:none;}
+
+  /* toc */
+  .toc{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--ground) 88%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  .toc .wrap{display:flex;align-items:center;gap:6px;height:50px;overflow-x:auto;scrollbar-width:none;}
+  .toc .wrap::-webkit-scrollbar{display:none;}
+  .toc a{font-family:var(--font-display);text-transform:uppercase;letter-spacing:.12em;font-size:.64rem;color:var(--muted);text-decoration:none;padding:6px 10px;white-space:nowrap;}
+  .toc a:hover{color:var(--ink);}
+  .toc .tbtn{margin-left:auto;font-family:var(--font-mono);font-size:.6rem;background:var(--panel);border:1px solid var(--border);color:var(--ink-dim);padding:6px 8px;border-radius:3px;cursor:pointer;text-transform:uppercase;white-space:nowrap;}
+
+  section{padding:44px 0;border-bottom:1px solid var(--line);}
+  h2{font-size:clamp(1.5rem,3.6vw,2.1rem);text-transform:uppercase;margin:0 0 .3rem;}
+  .sub{color:var(--ink-dim);max-width:64ch;margin:0 0 1.4rem;}
+  h3{font-size:1.02rem;text-transform:uppercase;letter-spacing:.06em;margin:2rem 0 .5rem;color:var(--ink);}
+  .field-label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:1.5rem 0 .4rem;}
+  .field-label .fl{font-family:var(--font-display);text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;color:var(--ink);}
+  .field-label .lim{font-family:var(--font-mono);font-size:.66rem;color:var(--muted);}
+
+  /* copy block */
+  .cb{border:1px solid var(--line);background:var(--panel);border-left:3px solid var(--sunset);position:relative;}
+  .cb pre{margin:0;padding:14px 46px 14px 16px;font-family:var(--font-mono);font-size:.82rem;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;color:var(--ink);}
+  .cb .copy{position:absolute;top:8px;right:8px;font-family:var(--font-mono);font-size:.58rem;letter-spacing:.08em;background:var(--ground);border:1px solid var(--border);color:var(--muted);padding:4px 7px;border-radius:3px;cursor:pointer;text-transform:uppercase;}
+  .cb .copy:hover{color:var(--sunset);border-color:var(--sunset);}
+  .cb .copy.done{color:var(--pine);border-color:var(--pine);}
+  .cb + .cb{margin-top:8px;}
+
+  .note{border-left:3px solid var(--gold);background:var(--gold-tint);padding:12px 14px;margin:1.2rem 0;border-radius:0 4px 4px 0;}
+  .note .l{font-family:var(--font-display);text-transform:uppercase;letter-spacing:.14em;font-size:.6rem;color:var(--gold);display:block;margin-bottom:3px;}
+  .note p{margin:0;font-size:.9rem;color:var(--ink-dim);}
+
+  .grid{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media(min-width:720px){ .grid.two{grid-template-columns:1fr 1fr;} }
+
+  /* shot list */
+  .shots{display:grid;grid-template-columns:1fr;gap:10px;counter-reset:shot;}
+  @media(min-width:720px){ .shots{grid-template-columns:1fr 1fr;} }
+  .shot{border:1px solid var(--line);background:var(--panel);padding:14px 16px 14px 52px;position:relative;}
+  .shot::before{counter-increment:shot;content:counter(shot);position:absolute;left:14px;top:14px;font-family:var(--font-mono);font-size:.8rem;color:var(--sunset);border:1px solid var(--border);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;}
+  .shot b{font-family:var(--font-display);text-transform:uppercase;letter-spacing:.04em;font-size:.82rem;display:block;}
+  .shot .cap{font-family:var(--font-mono);font-size:.78rem;color:var(--sunset);margin:4px 0;}
+  .shot span{font-size:.86rem;color:var(--ink-dim);}
+
+  /* calendar */
+  .cal{display:grid;grid-template-columns:88px 1fr;border:1px solid var(--line);}
+  .cal .c{border-bottom:1px solid var(--line);padding:12px 14px;}
+  .cal .c.when{background:var(--panel);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.06em;font-size:.72rem;border-right:3px solid var(--sunset);}
+  .cal .c.what{font-size:.9rem;color:var(--ink-dim);}
+  .cal .c:nth-last-child(-n+2){border-bottom:none;}
+
+  .pill{display:inline-block;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.1em;font-size:.6rem;border:1px solid var(--border);color:var(--muted);padding:2px 7px;margin-right:6px;}
+  .tag-ig{color:var(--sunset);border-color:var(--sunset);}
+  .tag-x{color:var(--ink);border-color:var(--border);}
+  .tag-rd{color:var(--pine);border-color:var(--pine);}
+  .small{font-size:.86rem;color:var(--ink-dim);}
+  footer{padding:30px 0 40px;color:var(--muted);font-family:var(--font-mono);font-size:.8rem;}
+</style>
+
+<div class="kit">
+  <div class="head">
+    <svg class="contour" viewBox="0 0 1000 260" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#C99C3C"><path d="M-20 190 Q 200 130 420 180 T 900 150 T 1100 180" opacity=".22"/><path d="M-20 215 Q 220 160 440 205 T 920 175 T 1100 205" opacity=".16"/></g><path d="M-20 260 L280 90 L400 170 L520 110 L700 260 Z" fill="#C75B39" opacity=".16"/></svg>
+    <div class="wrap" style="position:relative;">
+      <span class="kick">Launch Kit · v1.0</span>
+      <h1>Switch<b>back</b> — go-to-market</h1>
+      <p>App Store listing, social launch sequence, and the announcement email. Angle: <strong>train for your mountain.</strong> Every block below has a copy button.</p>
+    </div>
+  </div>
+
+  <nav class="toc">
+    <div class="wrap">
+      <a href="#store">App Store</a>
+      <a href="#social">Social</a>
+      <a href="#email">Email</a>
+      <a href="#voice">Voice</a>
+      <button class="tbtn" id="themeToggle" type="button">◐ Theme</button>
+    </div>
+  </nav>
+
+  <!-- ============ APP STORE ============ -->
+  <section id="store">
+    <div class="wrap">
+      <span class="kick">01 · Store listing</span>
+      <h2>App Store &amp; Google Play</h2>
+      <p class="sub">Copy is written to Apple’s character limits (Play is more generous — reuse the same text). Keywords assume the App Store already indexes your app name, so they don’t repeat it.</p>
+
+      <div class="field-label"><span class="fl">App name</span><span class="lim">≤ 30 chars · using 26</span></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>Switchback: Summit Training</pre></div>
+
+      <div class="field-label"><span class="fl">Subtitle</span><span class="lim">≤ 30 chars · using 23</span></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>Train for your mountain</pre></div>
+
+      <div class="field-label"><span class="fl">Promotional text</span><span class="lim">≤ 170 chars · using ~163</span></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>Name your peak and the day you leave. Switchback builds your whole training block backward from the summit — exact lifts, fuel targets, and weekend rucks on real trails.</pre></div>
+
+      <div class="field-label"><span class="fl">Keywords</span><span class="lim">≤ 100 chars · comma-separated</span></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>hiking,mountaineering,ruck,rucking,strength,training,summit,peak,backpacking,alpine,trail,climb</pre></div>
+
+      <div class="field-label"><span class="fl">Description</span><span class="lim">Long form · scannable</span></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>YOUR MOUNTAIN HAS A DATE. NOW YOUR TRAINING DOES TOO.
+
+Most training plans prepare you for no one in particular. Switchback starts from the one date that matters — your summit — and builds every week backward from it.
+
+Tell it the peak, the day you leave, your pack weight and the elevation you’ll cover. Switchback re-plans the entire program to end exactly on your trip date, tapers you the final week, and ramps your weekend rucks toward the real load and vertical you’ll face up high.
+
+HOW IT WORKS
+• Name your objective — trip, date, pack, gain, altitude, style.
+• The plan re-anchors — phases, deloads, and the taper rescale to your date.
+• Train the block — six lifts + cardio days + a weekend ruck.
+• Arrive peaked — you’ve simulated the load, the vert, and the thin air.
+
+WHAT YOU GET
+• Suggested working weights with warm-up ramps and plate math — they adapt to what you actually lift.
+• Calorie & macro targets paced to hit your goal weight by the final week, with a barcode food scanner.
+• A weekend ruck matched to real trails near you, plus the trailhead forecast and elevation profile.
+• Apple Health sync for bodyweight, recovery, and finished workouts.
+
+THE CLIMB
+Every session you complete is vertical feet toward Everest’s 29,032. Rank up from Flatlander to Summiteer, pass real world peaks, keep your streak alive, and collect 17 badges — so a long build stays motivating all the way to the trailhead.
+
+WORKS ANYWHERE
+Everything records on your phone instantly and syncs when you’re back in range. Built for the mountain, not the gym Wi-Fi.
+
+No trip on the calendar yet? Run the default 26-week program and let the climb keep you consistent to your goal weight.
+
+Switchback provides general fitness programming and is not medical advice. Consult a physician before starting any exercise or nutrition program, especially at altitude.</pre></div>
+
+      <div class="field-label"><span class="fl">“What’s New” — v1.0</span><span class="lim">Release notes</span></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>First ascent. Welcome to Switchback 1.0:
+• Objective-driven programming — the plan ends on your trip date.
+• Session Mode with warm-up ramps, plate math, and a rest timer.
+• Fuel targets, food search, and barcode scanning.
+• Trails near you with forecasts and elevation profiles.
+• The full climb: altitude, ranks, streaks, and 17 badges.
+Tell us what you’re training for — we read every review.</pre></div>
+
+      <h3>Screenshot shot list</h3>
+      <p class="small">Six frames, first three carry the story on their own (many people only see three). Each caption is the overlay text; shoot on the cream “Ranger Poster” UI.</p>
+      <div class="shots">
+        <div class="shot"><b>The objective</b><div class="cap">“Name the mountain. We build the climb.”</div><span>The Objective screen with a real trip, date, pack &amp; gain filled in.</span></div>
+        <div class="shot"><b>Today / altimeter</b><div class="cap">“Every session is feet toward the summit.”</div><span>Altimeter with altitude, streak flame, and today’s workout card.</span></div>
+        <div class="shot"><b>Session Mode</b><div class="cap">“Exact weights. Warm-up ramp. Plate math.”</div><span>A pitch mid-workout with set rows and the rest timer band.</span></div>
+        <div class="shot"><b>Fuel</b><div class="cap">“Fuel paced to your goal weight.”</div><span>Targets, macro cards, and the calorie log.</span></div>
+        <div class="shot"><b>Trails</b><div class="cap">“Weekend rucks on real trails.”</div><span>Saturday ruck card with forecast + a matched trail &amp; elevation profile.</span></div>
+        <div class="shot"><b>Summit</b><div class="cap">“Watch the whole climb happen.”</div><span>The ascent diagram, ranks, and the badge grid.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SOCIAL ============ -->
+  <section id="social">
+    <div class="wrap">
+      <span class="kick">02 · Social</span>
+      <h2>Launch sequence</h2>
+      <p class="sub">A one-week runway into launch day, then follow-ups. Lead every post with the objective-driven hook — the mountain, not the app.</p>
+
+      <div class="cal">
+        <div class="c when">T‑7</div><div class="c what">Teaser — plant the hook, no product shots yet.</div>
+        <div class="c when">T‑1</div><div class="c what">“Tomorrow” — reveal the UI, build urgency.</div>
+        <div class="c when">Launch</div><div class="c what">Full reveal across IG, X, and relevant subreddits.</div>
+        <div class="c when">T‑3</div><div class="c what">Angle follow-ups — one feature per post (rucks, fuel, the climb).</div>
+      </div>
+
+      <h3><span class="pill tag-ig">Instagram</span> Teaser · T‑7</h3>
+      <div class="note"><span class="l">Visual</span><p>Topographic contour lines slowly resolving into a mountain silhouette; sunset-orange route line drawing itself to the summit. No UI. End card: “Switchback. Soon.”</p></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>There’s a date on your calendar. A summit, a trailhead, a trip you told yourself you’d be ready for.
+
+Most training plans don’t know it exists.
+
+Something for the rest of us — soon. 🏔️
+
+#mountaineering #hiking #rucking #trainingforthemountains</pre></div>
+
+      <h3><span class="pill tag-ig">Instagram</span> Launch day · carousel</h3>
+      <div class="note"><span class="l">Visual — 5 slides</span><p>1) “Your mountain has a date. Now your training does too.” · 2) The Objective screen · 3) Today/altimeter · 4) Trails + forecast · 5) “Early access open — link in bio.”</p></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>Switchback is live. 🏔️
+
+It’s a strength & conditioning coach that plans backward from ONE date — the summit you’re training for.
+
+Tell it the peak and the day you leave. It re-plans the whole block to end on your trip, tapers you that final week, and ramps your weekend rucks toward the real pack weight and vertical you’ll carry up high.
+
+→ Exact weights that adapt to what you lift
+→ Fuel paced to your goal weight
+→ Weekend rucks matched to real trails near you
+→ Every session = feet climbed toward Everest
+→ Works with zero signal on the mountain
+
+What are you training for? Early access is open — link in bio.
+
+#mountaineering #alpineclimbing #hiking #backpacking #rucking #goruck #strengthtraining #trainingforthemountains #peakbagging #thruhiking</pre></div>
+
+      <h3><span class="pill tag-x">X / Twitter</span> Launch thread</h3>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>1/ Your mountain has a date. Your training should too.
+
+I built Switchback: a strength & conditioning app that plans your entire block backward from the day you leave for your objective. 🏔️
+
+Live today 👇</pre></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>2/ Most plans are generic. A 12-week template doesn’t know your climb is in 19 weeks, that you’ll carry 40 lbs up 4,000 ft, or that you need to taper before you fly.
+
+Switchback starts from your summit date and works backward.</pre></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>3/ Name the trip, date, pack weight, gain, altitude.
+
+The program re-anchors: phases + deloads rescale, the final week becomes a taper, and your Saturday rucks ramp toward the real load and vert you’ll face.</pre></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>4/ Plus: adaptive weights with plate math, fuel targets paced to your goal weight, weekend rucks matched to real trails, and it all works offline.
+
+And every session is vertical feet toward Everest — a whole climb you can watch happen.</pre></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>5/ Early access is open. Tell me what you’re training for and I’ll get you an invite.
+
+[link]</pre></div>
+
+      <h3><span class="pill tag-rd">Reddit</span> Launch post</h3>
+      <div class="note"><span class="l">Etiquette</span><p>Read each sub’s self-promo rules first (r/Fitness, r/Ultralight and others restrict it — some have promo threads). Post as a builder asking for feedback, disclose it’s yours, and reply to comments. Good fits: r/Mountaineering, r/alpinism, r/backpacking, r/rucking, r/GORUCK.</p></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>Title: I built a training app that plans backward from your summit date — looking for testers with a trip on the calendar
+
+Body:
+I kept training for objectives with generic programs that had no idea when my trip actually was — so I built the thing I wanted.
+
+You enter your objective (peak, date, pack weight, biggest-day gain, altitude, style) and it builds the whole strength + conditioning block backward from that date: phases and deloads rescale, the final week tapers, and the weekend rucks ramp toward the real load and vertical you’ll carry. It also handles fuel targets and matches your Saturday ruck to actual trails nearby, and it works fully offline.
+
+Full disclosure, it’s my app and it’s in early access. I’m not looking to spam — I want feedback from people who actually train for mountains. What would make this genuinely useful for your next objective? What’s missing? Happy to hand out invites to anyone with a trip coming up.</pre></div>
+
+      <h3>Follow-up one-liners · T‑3 onward</h3>
+      <div class="grid two">
+        <div class="cb"><button class="copy" type="button">Copy</button><pre>The Saturday ruck isn’t a suggestion to “go for a hike.” It’s a prescribed pack weight, duration, and elevation gain — matched to a real trail near you, with the forecast. Build the exact durability your objective demands. 🎒</pre></div>
+        <div class="cb"><button class="copy" type="button">Copy</button><pre>You don’t out-train a bad taper. Switchback makes your final week before the trip a taper automatically — so you reach the trailhead sharp, not smoked. 🏔️</pre></div>
+        <div class="cb"><button class="copy" type="button">Copy</button><pre>Climbing above 12,000 ft? The plan quietly grows your aerobic base so thin air isn’t the surprise that ends your summit day.</pre></div>
+        <div class="cb"><button class="copy" type="button">Copy</button><pre>Every workout you finish is vertical feet toward Everest’s 29,032. Finish the program, stand on the summit. Watch the climb happen. ⛰️</pre></div>
+      </div>
+
+      <h3>Hashtag bank</h3>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>#mountaineering #alpineclimbing #hiking #backpacking #thruhiking #rucking #goruck #peakbagging #trainingforthemountains #strengthtraining #trailrunning #kilimanjaro #14ers #mountainfitness #summitgoals</pre></div>
+    </div>
+  </section>
+
+  <!-- ============ EMAIL ============ -->
+  <section id="email">
+    <div class="wrap">
+      <span class="kick">03 · Email</span>
+      <h2>Launch announcement</h2>
+      <p class="sub">For a waitlist or a personal list of friends and training partners. Keep it plain-text-feeling and personal — it should read like you wrote it, not a brand.</p>
+
+      <div class="field-label"><span class="fl">Subject line options</span><span class="lim">A/B these</span></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>What are you training for?</pre></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>Your mountain has a date. Now your training does too.</pre></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>Name the peak. We’ll build the climb.</pre></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>Early access: a plan that ends on your summit day</pre></div>
+
+      <div class="field-label"><span class="fl">Preheader</span><span class="lim">≤ 90 chars</span></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>Switchback plans your whole training block backward from your trip date. It’s open.</pre></div>
+
+      <div class="field-label"><span class="fl">Body</span><span class="lim">Plain, personal</span></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>Hey —
+
+Quick one: the thing I’ve been building is open, and I think it’s for you.
+
+It’s called Switchback. It’s a training app with one strong opinion — that your program should be built around the trip you’re actually training for, not a generic template.
+
+You tell it your objective: the peak, the day you leave, your pack weight, the elevation you’ll cover. It builds the entire strength-and-conditioning block backward from that date — the phases, the deloads, and a taper the final week so you arrive at the trailhead fresh. Your weekend rucks ramp toward the real load and vertical you’ll carry up high.
+
+Along the way it suggests your working weights (and adjusts them to what you actually lift), sets a fuel target paced to your goal weight, and matches your Saturday ruck to real trails near you. It works with zero signal, because that’s where you’ll be.
+
+And because six months is a long time to stay consistent, every session you finish is vertical feet climbed toward Everest. You can literally watch the climb happen.
+
+Early access is open now. If there’s a mountain on your calendar, I’d love for you to try it — just hit the button and tell me what you’re training for.
+
+Claim your invite → [link]
+
+See you up there,
+[Name]</pre></div>
+
+      <div class="field-label"><span class="fl">Button + PS</span><span class="lim"></span></div>
+      <div class="cb"><button class="copy" type="button">Copy</button><pre>Button: Claim your invite
+
+P.S. No trip booked yet? It runs a proven 26-week program by default — start now and add your objective the day you commit to one.</pre></div>
+    </div>
+  </section>
+
+  <!-- ============ VOICE ============ -->
+  <section id="voice">
+    <div class="wrap">
+      <span class="kick">04 · Voice</span>
+      <h2>Keep it on-brand</h2>
+      <div class="grid two">
+        <div>
+          <h3 style="margin-top:0;">Say this</h3>
+          <ul class="small" style="padding-left:18px;">
+            <li>Objective, trip, summit, the block, the taper, rucks, vertical, thin air.</li>
+            <li>Second person. Direct. A little rugged. “Arrive peaked, not fried.”</li>
+            <li>Concrete numbers: 40 lb pack, 4,000 ft, 12,000 ft, 29,032.</li>
+            <li>Honest about early access. Invite feedback.</li>
+          </ul>
+        </div>
+        <div>
+          <h3 style="margin-top:0;">Not this</h3>
+          <ul class="small" style="padding-left:18px;">
+            <li>“Revolutionary,” “game-changing,” “AI-powered,” hype adjectives.</li>
+            <li>Fake urgency, fake user counts, invented testimonials.</li>
+            <li>Generic gym-bro tone or crushing-it clichés.</li>
+            <li>Medical or altitude-safety promises — always add the disclaimer.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note" style="margin-top:1.6rem;"><span class="l">Palette &amp; type (for designers)</span><p><span class="mono" style="font-family:var(--font-mono);">Cream #F2ECDC · Ink #2C2A20 · Pine #2F5233 · Sky #7A9FB3 · Sunset #C75B39 · Gold #C99C3C.</span> Display face: Alfa Slab One. Body: Source Sans 3. Data/mono: Space Mono. Motif: topographic contour lines, elevation profiles, route dashes.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">SWITCHBACK · Launch Kit · Train for your mountain · Base Camp → Summit</div>
+  </footer>
+</div>
+
+<script>
+  (function(){
+    var root=document.documentElement;
+    var tb=document.getElementById('themeToggle');
+    if(tb){tb.addEventListener('click',function(){
+      var cur=root.getAttribute('data-theme');
+      var isDark=cur?cur==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.setAttribute('data-theme',isDark?'light':'dark');
+    });}
+    document.querySelectorAll('.cb .copy').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var pre=btn.parentElement.querySelector('pre');
+        if(!pre) return;
+        var text=pre.innerText;
+        var done=function(){ btn.textContent='Copied ✓'; btn.classList.add('done'); setTimeout(function(){ btn.textContent='Copy'; btn.classList.remove('done'); },1400); };
+        if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done,function(){}); }
+        else { var r=document.createRange(); r.selectNodeContents(pre); var s=getSelection(); s.removeAllRanges(); s.addRange(r); try{document.execCommand('copy');done();}catch(e){} s.removeAllRanges(); }
+      });
+    });
+  })();
+</script>
